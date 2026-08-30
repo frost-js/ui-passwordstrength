@@ -23,12 +23,6 @@ Password-strength indicator for Frost UI with configurable thresholds, semantic 
 - No component-specific CSS or Sass
 - JSDoc-powered IntelliSense
 
-## Compatibility
-
-PasswordStrength targets modern browsers represented by the package's `baseline newly available` Browserslist query. The browser suite runs in Chromium, Firefox, and WebKit.
-
-The package supports Node.js `^20.19.0`, `^22.13.0`, or `>=24` for installation, builds, and development tooling. Runtime use requires a browser DOM or a compatible DOM environment configured through fQuery. Server-rendered applications should initialize the component on the client.
-
 ## Installation
 
 ### Browser projects / bundlers
@@ -54,6 +48,8 @@ const passwordStrength = PasswordStrength.init(
 ```
 
 `@fr0st/ui` and `@fr0st/query` are peer dependencies so the component shares the application's UI and fQuery instances. The package root, `dist/*`, and `src/*` are available through package exports.
+
+PasswordStrength requires a browser DOM or a compatible DOM environment configured through fQuery. Server-rendered applications should load the component on the client.
 
 ### Browser (ESM)
 
@@ -266,54 +262,15 @@ Pass an options object to initialize every matched input, or pass a public metho
 
 Applications remain responsible for meaningful labels, password requirements, validation feedback, and error messages. Treat the displayed score as guidance rather than proof that a password is safe.
 
-## Themes and RTL
-
-PasswordStrength uses Frost UI's form, progress, spacing, and semantic text-background classes. It does not ship a separate stylesheet or Sass source.
-
-Frost UI follows the user's preferred color scheme by default. Set `data-ui-theme="light"` or `data-ui-theme="dark"` on the document or an ancestor to select a theme explicitly:
-
-```html
-<section data-ui-theme="dark">
-    <div id="password-field">
-        <div class="form-input">
-            <label for="password">Password</label>
-            <input class="input-filled" id="password" type="password">
-        </div>
-    </div>
-</section>
-```
-
-Normal document and ancestor direction is inherited. The component adds no physical left/right styles, so progress placement and semantic feedback work in LTR and RTL layouts. When using `container`, place the target where it makes sense for the surrounding reading order.
-
-UI v3 owns the progress transitions and reduced-motion behavior.
-
 ## Development
 
-Install dependencies and Playwright browsers, then run the full suite:
-
 ```bash
-npm ci
-npx playwright install --with-deps chromium firefox webkit
 npm test
-```
-
-Useful commands:
-
-```bash
 npm run lint
 npm run build
-npm run test:browser
-npm run test:coverage
 ```
 
-`npm test` builds the bundles and runs the Playwright suite in Chromium, Firefox, and WebKit. Coverage uses Chromium V8 data and writes console, HTML, and LCOV reports.
-
-The build produces source maps for all four package outputs:
-
-- `dist/frost-ui-passwordstrength.esm.js`
-- `dist/frost-ui-passwordstrength.esm.min.js`
-- `dist/frost-ui-passwordstrength.js` (UMD)
-- `dist/frost-ui-passwordstrength.min.js` (UMD)
+`npm test` builds the bundles and runs the Playwright suite in Chromium, Firefox, and WebKit.
 
 ## License
 

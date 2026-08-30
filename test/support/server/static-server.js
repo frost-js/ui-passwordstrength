@@ -4,12 +4,13 @@ import { createServer } from 'node:http';
 const css = 'text/css; charset=utf-8';
 const html = 'text/html; charset=utf-8';
 const javaScript = 'text/javascript; charset=utf-8';
+const resolveModule = (specifier) => new URL(import.meta.resolve(specifier));
 
 const routes = new Map([
     ['/', { contentType: html, file: new URL('../app/index.html', import.meta.url) }],
     ['/assets/frost-ui-passwordstrength.js', { contentType: javaScript, file: new URL('../../../dist/frost-ui-passwordstrength.js', import.meta.url) }],
-    ['/assets/frost-ui-bundle.js', { contentType: javaScript, file: new URL('../../../node_modules/@fr0st/ui/dist/frost-ui-bundle.js', import.meta.url) }],
-    ['/assets/frost-ui.css', { contentType: css, file: new URL('../../../node_modules/@fr0st/ui/dist/frost-ui.css', import.meta.url) }],
+    ['/assets/frost-ui-bundle.js', { contentType: javaScript, file: resolveModule('@fr0st/ui/dist/frost-ui-bundle.js') }],
+    ['/assets/frost-ui.css', { contentType: css, file: resolveModule('@fr0st/ui/dist/frost-ui.css') }],
 ]);
 
 const server = createServer(async (request, response) => {

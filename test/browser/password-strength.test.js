@@ -47,20 +47,21 @@ test.describe('PasswordStrength', () => {
         });
 
         test('reuses an existing PasswordStrength', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            const state = await page.evaluate((_) => {
                 const password = $.findOne('#password');
                 const first = UI.PasswordStrength.init(password, { striped: true });
                 const second = UI.PasswordStrength.init(password, { striped: false });
                 return {
-                    progressCount: $.find('.progress', '#field').length,
                     sameInstance: first === second,
                     striped: second.options.striped,
                 };
-            })).toEqual({
-                progressCount: 1,
+            });
+
+            expect(state).toEqual({
                 sameInstance: true,
                 striped: true,
             });
+            await expect(page.locator('#field .progress')).toHaveCount(1);
         });
 
         test('exposes frozen default options', async ({ page }) => {
@@ -90,96 +91,77 @@ test.describe('PasswordStrength', () => {
         });
 
         test('renders the initial strength', async ({ page }) => {
-            expect(await page.evaluate((_) => {
-                const password = $.findOne('#password');
-                UI.PasswordStrength.init(password);
-                const progress = $.findOne('.progress');
-                const progressBar = $.findOne('.progress-bar');
-                return {
-                    className: progressBar.className,
-                    describedBy: $.getAttribute(password, 'aria-describedby'),
-                    id: progressBar.id,
-                    maximum: $.getAttribute(progressBar, 'aria-valuemax'),
-                    minimum: $.getAttribute(progressBar, 'aria-valuemin'),
-                    progressClass: progress.className,
-                    role: $.getAttribute(progressBar, 'role'),
-                    score: $.getAttribute(progressBar, 'aria-valuenow'),
-                    text: $.getText(progressBar),
-                    width: progressBar.style.width,
-                };
-            })).toEqual(expect.objectContaining({
-                className: 'progress-bar text-bg-danger',
-                maximum: '100',
-                minimum: '0',
-                progressClass: 'progress mt-2',
-                role: 'progressbar',
-                score: '32',
-                text: 'Weak',
-                width: '32%',
-            }));
-
-            const aria = await page.evaluate((_) => {
-                const password = $.findOne('#password');
-                const progressBar = $.findOne('.progress-bar');
-                return {
-                    describedBy: $.getAttribute(password, 'aria-describedby'),
-                    id: progressBar.id,
-                };
+            await page.evaluate((_) => {
+                UI.PasswordStrength.init($.findOne('#password'));
             });
-            expect(aria.id).toMatch(/^password-strength/);
-            expect(aria.describedBy).toBe(aria.id);
+
+            const password = page.locator('#password');
+            const progress = page.locator('.progress');
+            const progressBar = page.locator('.progress-bar');
+
+            await expect(progress).toHaveClass('progress mt-2');
+            await expect(progressBar).toHaveClass('progress-bar text-bg-danger');
+            await expect(progressBar).toHaveAttribute('aria-valuemax', '100');
+            await expect(progressBar).toHaveAttribute('aria-valuemin', '0');
+            await expect(progressBar).toHaveAttribute('aria-valuenow', '32');
+            await expect(progressBar).toHaveAttribute('id', /^password-strength/);
+            await expect(progressBar).toHaveAttribute('role', 'progressbar');
+            await expect(progressBar).toHaveAttribute('style', 'width: 32%;');
+            await expect(progressBar).toHaveText('Weak');
+
+            const progressId = await progressBar.getAttribute('id');
+            await expect(password).toHaveAttribute('aria-describedby', progressId);
         });
 
         test('appends the generated ID to aria-describedby', async ({ page }) => {
-            const aria = await page.evaluate((_) => {
+            await page.evaluate((_) => {
                 const password = $.findOne('#password');
                 $.setAttribute(password, { 'aria-describedby': 'hint error' });
                 UI.PasswordStrength.init(password);
-                const progressBar = $.findOne('.progress-bar');
-                return {
-                    describedBy: $.getAttribute(password, 'aria-describedby'),
-                    id: progressBar.id,
-                };
             });
-            expect(aria.describedBy).toBe(`hint error ${aria.id}`);
+
+            const progressId = await page.locator('.progress-bar').getAttribute('id');
+            await expect(page.locator('#password'))
+                .toHaveAttribute('aria-describedby', `hint error ${progressId}`);
         });
     });
 
     test.describe('#dispose', () => {
         test('removes the PasswordStrength and generated markup', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            const state = await page.evaluate((_) => {
                 const password = $.findOne('#password');
                 const passwordStrength = UI.PasswordStrength.init(password);
-                const progress = $.findOne('.progress');
                 passwordStrength.dispose();
                 return {
-                    describedBy: $.getAttribute(password, 'aria-describedby'),
                     hasData: $.hasData(password, 'passwordstrength'),
                     node: passwordStrength.node,
                     options: passwordStrength.options,
-                    progressConnected: $.isConnected(progress),
                 };
-            })).toEqual({
-                describedBy: null,
+            });
+
+            expect(state).toEqual({
                 hasData: false,
                 node: null,
                 options: null,
-                progressConnected: false,
             });
+            await expect(page.locator('#password')).not.toHaveAttribute('aria-describedby');
+            await expect(page.locator('.progress')).toHaveCount(0);
         });
 
         test('restores existing aria-describedby state', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            await page.evaluate((_) => {
                 const password = $.findOne('#password');
                 $.setAttribute(password, { 'aria-describedby': 'hint error' });
                 const passwordStrength = UI.PasswordStrength.init(password);
                 passwordStrength.dispose();
-                return $.getAttribute(password, 'aria-describedby');
-            })).toBe('hint error');
+            });
+
+            await expect(page.locator('#password'))
+                .toHaveAttribute('aria-describedby', 'hint error');
         });
 
         test('restores empty and absent aria-describedby state', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            await page.evaluate((_) => {
                 const password = $.findOne('#password');
                 const password2 = $.findOne('#password2');
                 $.setAttribute(password, { 'aria-describedby': '' });
@@ -187,14 +169,10 @@ test.describe('PasswordStrength', () => {
                 const second = UI.PasswordStrength.init(password2);
                 first.dispose();
                 second.dispose();
-                return {
-                    absent: $.getAttribute(password2, 'aria-describedby'),
-                    empty: $.getAttribute(password, 'aria-describedby'),
-                };
-            })).toEqual({
-                absent: null,
-                empty: '',
             });
+
+            await expect(page.locator('#password')).toHaveAttribute('aria-describedby', '');
+            await expect(page.locator('#password2')).not.toHaveAttribute('aria-describedby');
         });
 
         test('removes the input event handler', async ({ page }) => {
@@ -332,79 +310,67 @@ test.describe('PasswordStrength', () => {
 
     test.describe('events', () => {
         test('refreshes when the password changes', async ({ page }) => {
-            expect(await page.evaluate((_) => {
-                const password = $.findOne('#password');
-                UI.PasswordStrength.init(password);
-                const progressBar = $.findOne('.progress-bar');
-                const before = {
-                    score: $.getAttribute(progressBar, 'aria-valuenow'),
-                    text: $.getText(progressBar),
-                    width: progressBar.style.width,
-                };
-                $.setValue(password, 'CorrectHorseBatteryStaple');
-                $.triggerEvent(password, 'input');
-                return {
-                    after: {
-                        score: $.getAttribute(progressBar, 'aria-valuenow'),
-                        text: $.getText(progressBar),
-                        width: progressBar.style.width,
-                    },
-                    before,
-                };
-            })).toEqual({
-                after: {
-                    score: '100',
-                    text: 'Very Strong',
-                    width: '100%',
-                },
-                before: {
-                    score: '32',
-                    text: 'Weak',
-                    width: '32%',
-                },
+            await page.evaluate((_) => {
+                UI.PasswordStrength.init($.findOne('#password'));
             });
+
+            const password = page.locator('#password');
+            const progressBar = page.locator('.progress-bar');
+
+            await expect(progressBar).toHaveAttribute('aria-valuenow', '32');
+            await expect(progressBar).toHaveAttribute('style', 'width: 32%;');
+            await expect(progressBar).toHaveText('Weak');
+
+            await password.fill('CorrectHorseBatteryStaple');
+
+            await expect(progressBar).toHaveAttribute('aria-valuenow', '100');
+            await expect(progressBar).toHaveAttribute('style', 'width: 100%;');
+            await expect(progressBar).toHaveText('Very Strong');
         });
     });
 
     test.describe('container option', () => {
         test('uses the closest field container by default', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            await page.evaluate((_) => {
                 UI.PasswordStrength.init($.findOne('#password'));
-                return $.findOne('.progress').parentElement.id;
-            })).toBe('field');
+            });
+
+            await expect(page.locator('#field > .progress')).toHaveCount(1);
         });
 
         test('works with container option', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            await page.evaluate((_) => {
                 UI.PasswordStrength.init(
                     $.findOne('#password'),
                     { container: '#target' },
                 );
-                return $.findOne('.progress').parentElement.id;
-            })).toBe('target');
+            });
+
+            await expect(page.locator('#target > .progress')).toHaveCount(1);
         });
 
         test('works with container option (data-ui-container)', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            const state = await page.evaluate((_) => {
                 const password = $.findOne('#password');
                 $.setDataset(password, { uiContainer: '#target' });
                 const passwordStrength = UI.PasswordStrength.init(password);
                 return {
                     container: passwordStrength.options.container,
                     frozen: Object.isFrozen(passwordStrength.options),
-                    parent: $.findOne('.progress').parentElement.id,
                 };
-            })).toEqual({
+            });
+
+            expect(state).toEqual({
                 container: '#target',
                 frozen: true,
-                parent: 'target',
             });
+            await expect(page.locator('#target > .progress')).toHaveCount(1);
         });
     });
 
     test.describe('levels option', () => {
         test('renders the default level boundaries', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            await page.evaluate((_) => {
                 const levels = [
                     '',
                     'aaaaaaAaA',
@@ -413,32 +379,38 @@ test.describe('PasswordStrength', () => {
                     'aaaa1!1!A',
                     'aaA1!1!1!',
                 ];
-                return levels.map((value) => {
+                levels.forEach((value) => {
                     const container = $.create('div');
                     const password = $.create('input', { value });
                     $.append(container, password);
                     $.append(document.body, container);
                     UI.PasswordStrength.init(password);
-                    const progressBar = $.findOne('.progress-bar', container);
-                    return {
-                        className: progressBar.className,
-                        score: Number($.getAttribute(progressBar, 'aria-valuenow')),
-                        text: $.getText(progressBar),
-                        width: progressBar.style.width,
-                    };
                 });
-            })).toEqual([
+            });
+
+            const expected = [
                 { className: 'progress-bar text-bg-danger', score: 0, text: 'Very Weak', width: '0%' },
                 { className: 'progress-bar text-bg-danger', score: 20, text: 'Weak', width: '20%' },
                 { className: 'progress-bar text-bg-warning', score: 40, text: 'Normal', width: '40%' },
                 { className: 'progress-bar text-bg-success', score: 60, text: 'Strong', width: '60%' },
                 { className: 'progress-bar text-bg-success', score: 80, text: 'Very Strong', width: '80%' },
                 { className: 'progress-bar text-bg-success', score: 100, text: 'Very Strong', width: '100%' },
-            ]);
+            ];
+            const progressBars = page.locator('.progress-bar');
+
+            await expect(progressBars).toHaveCount(expected.length);
+            await expect(progressBars).toHaveClass(expected.map(({ className }) => className));
+            await expect(progressBars).toHaveText(expected.map(({ text }) => text));
+
+            for (const [index, { score, width }] of expected.entries()) {
+                const progressBar = progressBars.nth(index);
+                await expect(progressBar).toHaveAttribute('aria-valuenow', `${score}`);
+                await expect(progressBar).toHaveAttribute('style', `width: ${width};`);
+            }
         });
 
         test('works with levels option', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            await page.evaluate((_) => {
                 const password = $.findOne('#password');
                 $.setValue(password, '');
                 UI.PasswordStrength.init(
@@ -453,19 +425,15 @@ test.describe('PasswordStrength', () => {
                         ],
                     },
                 );
-                const progressBar = $.findOne('.progress-bar');
-                return {
-                    className: progressBar.className,
-                    text: $.getText(progressBar),
-                };
-            })).toEqual({
-                className: 'progress-bar text-bg-primary',
-                text: '',
             });
+
+            const progressBar = page.locator('.progress-bar');
+            await expect(progressBar).toHaveClass('progress-bar text-bg-primary');
+            await expect(progressBar).toHaveText('');
         });
 
         test('works with levels option (data-ui-levels)', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            const state = await page.evaluate((_) => {
                 const password = $.findOne('#password');
                 $.setValue(password, '');
                 $.setDataset(password, {
@@ -478,59 +446,66 @@ test.describe('PasswordStrength', () => {
                     ],
                 });
                 const passwordStrength = UI.PasswordStrength.init(password);
-                const progressBar = $.findOne('.progress-bar');
                 return {
-                    className: progressBar.className,
                     frozen: Object.isFrozen(passwordStrength.options),
                     level: passwordStrength.options.levels[0],
-                    text: $.getText(progressBar),
                 };
-            })).toEqual({
-                className: 'progress-bar text-bg-primary',
+            });
+
+            expect(state).toEqual({
                 frozen: true,
                 level: {
                     class: 'text-bg-primary',
                     score: 0,
                     text: 'Custom',
                 },
-                text: 'Custom',
             });
+
+            const progressBar = page.locator('.progress-bar');
+            await expect(progressBar).toHaveClass('progress-bar text-bg-primary');
+            await expect(progressBar).toHaveText('Custom');
         });
     });
 
     test.describe('striped option', () => {
         test('does not render stripes by default', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            await page.evaluate((_) => {
                 UI.PasswordStrength.init($.findOne('#password'));
-                return $.hasClass('.progress-bar', 'progress-bar-striped');
-            })).toBe(false);
+            });
+
+            await expect(page.locator('.progress-bar'))
+                .not.toHaveClass(/\bprogress-bar-striped\b/);
         });
 
         test('works with striped option', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            await page.evaluate((_) => {
                 UI.PasswordStrength.init(
                     $.findOne('#password'),
                     { striped: true },
                 );
-                return $.hasClass('.progress-bar', 'progress-bar-striped');
-            })).toBe(true);
+            });
+
+            await expect(page.locator('.progress-bar'))
+                .toHaveClass(/\bprogress-bar-striped\b/);
         });
 
         test('works with striped option (data-ui-striped)', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            const state = await page.evaluate((_) => {
                 const password = $.findOne('#password');
                 $.setDataset(password, { uiStriped: true });
                 const passwordStrength = UI.PasswordStrength.init(password);
                 return {
                     frozen: Object.isFrozen(passwordStrength.options),
                     striped: passwordStrength.options.striped,
-                    stripedClass: $.hasClass('.progress-bar', 'progress-bar-striped'),
                 };
-            })).toEqual({
+            });
+
+            expect(state).toEqual({
                 frozen: true,
                 striped: true,
-                stripedClass: true,
             });
+            await expect(page.locator('.progress-bar'))
+                .toHaveClass(/\bprogress-bar-striped\b/);
         });
     });
 });
