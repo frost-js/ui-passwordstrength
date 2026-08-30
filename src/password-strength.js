@@ -1,52 +1,155 @@
 import $ from '@fr0st/query';
-import { BaseComponent } from '@fr0st/ui';
+import { BaseComponent, generateId } from '@fr0st/ui';
+import { getStrength as calculateStrength } from './helpers.js';
 
 /**
- * PasswordStrength Class
- * @class
+ * @typedef {object} PasswordStrengthLevel
+ * @property {string} class The CSS class applied to the progress bar.
+ * @property {number} score The minimum score for the level.
+ * @property {string} [text] The label displayed in the progress bar.
+ */
+
+/**
+ * @typedef {object} PasswordStrengthOptions
+ * @property {string|null} [container=null] The selector for the progress container.
+ * @property {PasswordStrengthLevel[]} [levels] The ordered password-strength levels.
+ * @property {boolean} [striped=false] Whether to display a striped progress bar.
+ */
+
+/**
+ * Displays the strength of a password input as a progress bar.
+ * @augments {BaseComponent<PasswordStrengthOptions>}
  */
 export default class PasswordStrength extends BaseComponent {
+    #container;
+    #describedBy;
+    #progress;
+    #progressBar;
+
     /**
-     * New PasswordStrength constructor.
+     * Calculates the strength of a password.
+     * @param {string} password The password.
+     * @returns {number} The password strength, from 0 to 100.
+     */
+    static getStrength(password) {
+        return calculateStrength(password);
+    }
+
+    /**
+     * Creates a PasswordStrength.
      * @param {HTMLElement} node The input node.
-     * @param {object} [options] The options to create the PasswordStrength with.
+     * @param {PasswordStrengthOptions} [options] The PasswordStrength options.
      */
     constructor(node, options) {
         super(node, options);
 
-        if (this._options.container) {
-            this._container = $.findOne(this._options.container);
+        if (this.options.container) {
+            this.#container = $.findOne(this.options.container);
         } else {
-            this._container = $.closest(this._node, ':not(.form-input):not(.input-group)');
+            this.#container = $.closest(this.node, ':not(.form-input):not(.input-group)').shift();
         }
 
-        this._render();
-        this._refresh();
-        this._events();
+        this.#render();
+        this.#refresh();
+        this.#events();
     }
 
-    /**
-     * Dispose the PasswordStrength.
-     */
+    /** @inheritdoc */
     dispose() {
-        $.remove(this._progress);
-        $.removeEvent(this._node, 'input.ui.passwordstrength');
-        $.removeAttribute(this._node, 'aria-describedby');
+        $.remove(this.#progress);
+        $.removeEvent(this.node, 'input.ui.passwordstrength');
 
-        this._container = null;
-        this._progress = null;
-        this._progressBar = null;
+        if (this.#describedBy === null) {
+            $.removeAttribute(this.node, 'aria-describedby');
+        } else {
+            $.setAttribute(this.node, { 'aria-describedby': this.#describedBy });
+        }
+
+        this.#container = null;
+        this.#progress = null;
+        this.#progressBar = null;
 
         super.dispose();
     }
 
     /**
-     * Get the password strength.
-     * @return {number} The password strength. (0, 100)
+     * Gets the password strength.
+     * @returns {number} The password strength, from 0 to 100.
      */
     getStrength() {
-        const value = $.getValue(this._node);
+        const value = $.getValue(this.node);
 
         return this.constructor.getStrength(value);
+    }
+
+    /**
+     * Attaches events for the PasswordStrength.
+     */
+    #events() {
+        $.addEvent(this.node, 'input.ui.passwordstrength', (_) => {
+            this.#refresh();
+        });
+    }
+
+    /**
+     * Refreshes the password strength.
+     */
+    #refresh() {
+        const strength = this.getStrength();
+
+        let nextLevel;
+        for (const level of this.options.levels) {
+            if (strength < level.score) {
+                break;
+            }
+
+            nextLevel = level;
+        }
+
+        $.setStyle(this.#progressBar, { width: `${strength}%` });
+        $.setAttribute(this.#progressBar, {
+            'class': this.constructor.classes.progressBar,
+            'aria-valuenow': strength,
+        });
+
+        $.addClass(this.#progressBar, nextLevel.class);
+
+        if (this.options.striped) {
+            $.addClass(this.#progressBar, this.constructor.classes.progressBarStriped);
+        }
+
+        if (nextLevel.text) {
+            $.setText(this.#progressBar, nextLevel.text);
+        }
+    }
+
+    /**
+     * Renders the password strength element.
+     */
+    #render() {
+        this.#describedBy = $.getAttribute(this.node, 'aria-describedby');
+        this.#progress = $.create('div', {
+            class: this.constructor.classes.progress,
+        });
+
+        const id = generateId('password-strength');
+
+        this.#progressBar = $.create('div', {
+            attributes: {
+                'id': id,
+                'role': 'progressbar',
+                'aria-valuemin': 0,
+                'aria-valuemax': 100,
+            },
+        });
+
+        $.append(this.#progress, this.#progressBar);
+        $.append(this.#container, this.#progress);
+
+        const describedBy = [this.#describedBy, id]
+            .filter(Boolean)
+            .join(' ');
+
+        $.setAttribute(this.node, { 'aria-describedby': describedBy });
     }
 }

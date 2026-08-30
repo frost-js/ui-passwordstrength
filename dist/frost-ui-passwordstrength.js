@@ -33,106 +33,12 @@ Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 //#endregion
 _fr0st_query = __toESM(_fr0st_query, 1);
 
-//#region src/password-strength.js
+//#region src/helpers.js
 /**
-	* PasswordStrength Class
-	* @class
-	*/
-	var PasswordStrength = class extends _fr0st_ui.BaseComponent {
-		/**
-		* New PasswordStrength constructor.
-		* @param {HTMLElement} node The input node.
-		* @param {object} [options] The options to create the PasswordStrength with.
-		*/
-		constructor(node, options) {
-			super(node, options);
-			if (this._options.container) this._container = _fr0st_query.default.findOne(this._options.container);
-			else this._container = _fr0st_query.default.closest(this._node, ":not(.form-input):not(.input-group)");
-			this._render();
-			this._refresh();
-			this._events();
-		}
-		/**
-		* Dispose the PasswordStrength.
-		*/
-		dispose() {
-			_fr0st_query.default.remove(this._progress);
-			_fr0st_query.default.removeEvent(this._node, "input.ui.passwordstrength");
-			_fr0st_query.default.removeAttribute(this._node, "aria-describedby");
-			this._container = null;
-			this._progress = null;
-			this._progressBar = null;
-			super.dispose();
-		}
-		/**
-		* Get the password strength.
-		* @return {number} The password strength. (0, 100)
-		*/
-		getStrength() {
-			const value = _fr0st_query.default.getValue(this._node);
-			return this.constructor.getStrength(value);
-		}
-	};
-
-//#endregion
-//#region src/prototype/events.js
-/**
-	* Attach events for the PasswordStrength.
-	*/
-	function _events() {
-		_fr0st_query.default.addEvent(this._node, "input.ui.passwordstrength", (_) => {
-			this._refresh();
-		});
-	}
-
-//#endregion
-//#region src/prototype/helpers.js
-/**
-	* Refresh the password strength.
-	*/
-	function _refresh() {
-		const strength = this.getStrength();
-		let nextLevel;
-		for (const level of this._options.levels) {
-			if (strength < level.score) break;
-			nextLevel = level;
-		}
-		_fr0st_query.default.setStyle(this._progressBar, { width: `${strength}%` });
-		_fr0st_query.default.setAttribute(this._progressBar, {
-			"class": this.constructor.classes.progressBar,
-			"aria-valuenow": strength
-		});
-		_fr0st_query.default.addClass(this._progressBar, nextLevel.class);
-		if (this._options.striped) _fr0st_query.default.addClass(this._progressBar, this.constructor.classes.progressBarStriped);
-		if (nextLevel.text) _fr0st_query.default.setText(this._progressBar, nextLevel.text);
-	}
-
-//#endregion
-//#region src/prototype/render.js
-/**
-	* Render the password strength element.
-	*/
-	function _render() {
-		this._progress = _fr0st_query.default.create("div", { class: this.constructor.classes.progress });
-		const id = (0, _fr0st_ui.generateId)("password-strength");
-		this._progressBar = _fr0st_query.default.create("div", { attributes: {
-			"id": id,
-			"role": "progressbar",
-			"aria-valuemin": 0,
-			"aria-valuemax": 100
-		} });
-		_fr0st_query.default.append(this._progress, this._progressBar);
-		_fr0st_query.default.append(this._container, this._progress);
-		_fr0st_query.default.setAttribute(this._node, { "aria-describedby": id });
-	}
-
-//#endregion
-//#region src/static/helpers.js
-/**
-	* Find character sequences in a string.
+	* Finds character sequences in a string.
 	* @param {string} string The input string.
-	* @param {array} locations The character locations.
-	* @return {array} The character sequences.
+	* @param {number[]} locations The character locations.
+	* @returns {string[][]} The character sequences.
 	*/
 	function findSequences(string, locations) {
 		const sequences = [];
@@ -156,9 +62,9 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		return sequences;
 	}
 	/**
-	* Get the strength of a password.
+	* Calculates the strength of a password.
 	* @param {string} password The password.
-	* @return {number} The password strength.
+	* @returns {number} The password strength, from 0 to 100.
 	*/
 	function getStrength(password) {
 		if (password.match(/^password/i)) password = password.substring(8);
@@ -208,7 +114,119 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 	}
 
 //#endregion
+//#region src/password-strength.js
+/**
+	* @typedef {object} PasswordStrengthLevel
+	* @property {string} class The CSS class applied to the progress bar.
+	* @property {number} score The minimum score for the level.
+	* @property {string} [text] The label displayed in the progress bar.
+	*/
+	/**
+	* @typedef {object} PasswordStrengthOptions
+	* @property {string|null} [container=null] The selector for the progress container.
+	* @property {PasswordStrengthLevel[]} [levels] The ordered password-strength levels.
+	* @property {boolean} [striped=false] Whether to display a striped progress bar.
+	*/
+	/**
+	* Displays the strength of a password input as a progress bar.
+	* @augments {BaseComponent<PasswordStrengthOptions>}
+	*/
+	var PasswordStrength = class extends _fr0st_ui.BaseComponent {
+		#container;
+		#describedBy;
+		#progress;
+		#progressBar;
+		/**
+		* Calculates the strength of a password.
+		* @param {string} password The password.
+		* @returns {number} The password strength, from 0 to 100.
+		*/
+		static getStrength(password) {
+			return getStrength(password);
+		}
+		/**
+		* Creates a PasswordStrength.
+		* @param {HTMLElement} node The input node.
+		* @param {PasswordStrengthOptions} [options] The PasswordStrength options.
+		*/
+		constructor(node, options) {
+			super(node, options);
+			if (this.options.container) this.#container = _fr0st_query.default.findOne(this.options.container);
+			else this.#container = _fr0st_query.default.closest(this.node, ":not(.form-input):not(.input-group)").shift();
+			this.#render();
+			this.#refresh();
+			this.#events();
+		}
+		/** @inheritdoc */
+		dispose() {
+			_fr0st_query.default.remove(this.#progress);
+			_fr0st_query.default.removeEvent(this.node, "input.ui.passwordstrength");
+			if (this.#describedBy === null) _fr0st_query.default.removeAttribute(this.node, "aria-describedby");
+			else _fr0st_query.default.setAttribute(this.node, { "aria-describedby": this.#describedBy });
+			this.#container = null;
+			this.#progress = null;
+			this.#progressBar = null;
+			super.dispose();
+		}
+		/**
+		* Gets the password strength.
+		* @returns {number} The password strength, from 0 to 100.
+		*/
+		getStrength() {
+			const value = _fr0st_query.default.getValue(this.node);
+			return this.constructor.getStrength(value);
+		}
+		/**
+		* Attaches events for the PasswordStrength.
+		*/
+		#events() {
+			_fr0st_query.default.addEvent(this.node, "input.ui.passwordstrength", (_) => {
+				this.#refresh();
+			});
+		}
+		/**
+		* Refreshes the password strength.
+		*/
+		#refresh() {
+			const strength = this.getStrength();
+			let nextLevel;
+			for (const level of this.options.levels) {
+				if (strength < level.score) break;
+				nextLevel = level;
+			}
+			_fr0st_query.default.setStyle(this.#progressBar, { width: `${strength}%` });
+			_fr0st_query.default.setAttribute(this.#progressBar, {
+				"class": this.constructor.classes.progressBar,
+				"aria-valuenow": strength
+			});
+			_fr0st_query.default.addClass(this.#progressBar, nextLevel.class);
+			if (this.options.striped) _fr0st_query.default.addClass(this.#progressBar, this.constructor.classes.progressBarStriped);
+			if (nextLevel.text) _fr0st_query.default.setText(this.#progressBar, nextLevel.text);
+		}
+		/**
+		* Renders the password strength element.
+		*/
+		#render() {
+			this.#describedBy = _fr0st_query.default.getAttribute(this.node, "aria-describedby");
+			this.#progress = _fr0st_query.default.create("div", { class: this.constructor.classes.progress });
+			const id = (0, _fr0st_ui.generateId)("password-strength");
+			this.#progressBar = _fr0st_query.default.create("div", { attributes: {
+				"id": id,
+				"role": "progressbar",
+				"aria-valuemin": 0,
+				"aria-valuemax": 100
+			} });
+			_fr0st_query.default.append(this.#progress, this.#progressBar);
+			_fr0st_query.default.append(this.#container, this.#progress);
+			const describedBy = [this.#describedBy, id].filter(Boolean).join(" ");
+			_fr0st_query.default.setAttribute(this.node, { "aria-describedby": describedBy });
+		}
+	};
+
+//#endregion
 //#region src/index.js
+/** @import { PasswordStrengthOptions } from './password-strength.js'; */
+	/** @type {PasswordStrengthOptions} */
 	PasswordStrength.defaults = {
 		levels: [
 			{
@@ -245,11 +263,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		progressBar: "progress-bar",
 		progressBarStriped: "progress-bar-striped"
 	};
-	PasswordStrength.getStrength = getStrength;
-	var proto = PasswordStrength.prototype;
-	proto._events = _events;
-	proto._refresh = _refresh;
-	proto._render = _render;
 	(0, _fr0st_ui.initComponent)("passwordstrength", PasswordStrength);
 	var src_default = PasswordStrength;
 

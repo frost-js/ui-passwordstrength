@@ -1,10 +1,10 @@
 import $ from '@fr0st/query';
 
 /**
- * Find character sequences in a string.
+ * Finds character sequences in a string.
  * @param {string} string The input string.
- * @param {array} locations The character locations.
- * @return {array} The character sequences.
+ * @param {number[]} locations The character locations.
+ * @returns {string[][]} The character sequences.
  */
 function findSequences(string, locations) {
     const sequences = [];
@@ -35,12 +35,12 @@ function findSequences(string, locations) {
     }
 
     return sequences;
-};
+}
 
 /**
- * Get the strength of a password.
+ * Calculates the strength of a password.
  * @param {string} password The password.
- * @return {number} The password strength.
+ * @returns {number} The password strength, from 0 to 100.
  */
 export function getStrength(password) {
     if (password.match(/^password/i)) {
@@ -159,4 +159,4 @@ export function getStrength(password) {
     }
 
     return $._clamp(score, 0, 100);
-};
+}
