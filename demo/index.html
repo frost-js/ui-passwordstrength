@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Frost UI PasswordStrength Demo</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui.min.css">
+    <link rel="stylesheet" href="assets/demo.css">
+    <script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui-bundle.min.js" defer></script>
+    <script src="../dist/frost-ui-passwordstrength.js" defer></script>
+    <script src="assets/demo.js" defer></script>
+</head>
+
+<body>
+    <header class="navbar bg-glass sticky-top border-bottom">
+        <div class="container d-flex align-items-center justify-content-between gap-3">
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="#top">
+                <span class="badge bg-primary bg-gradient shadow-glow fs-5" aria-hidden="true">F</span>
+                <span>PasswordStrength</span>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <label class="small fw-bold mb-0" for="demo-theme">Theme</label>
+                <select class="input-outline input-sm w-auto rounded-pill" id="demo-theme" data-demo-theme>
+                    <option value="system">System</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <main class="container py-4 py-lg-5" id="top">
+        <section class="card border-0 overflow-hidden shadow-lg mb-5">
+            <div class="row g-0 align-items-stretch">
+                <div class="col-lg-7 d-flex align-items-center bg-ambient">
+                    <div class="p-4 p-md-5">
+                        <span class="badge bg-primary-subtle text-primary-subtle mb-3">Frost UI v3 component</span>
+                        <h1 class="display-2 mb-4">Clear password feedback with <span class="text-gradient">no extra styles.</span></h1>
+                        <p class="lead text-body-secondary mb-4">Explore native Frost UI inputs, semantic strength levels, striped progress, custom placement, public methods, and static scoring.</p>
+                        <nav class="d-flex flex-wrap gap-2" aria-label="Demo sections">
+                            <a class="btn btn-primary ripple" href="#styles">Explore styles</a>
+                            <a class="btn btn-secondary ripple" href="#customization">Customize levels</a>
+                            <a class="btn btn-outline-primary ripple" href="#api">Try the API</a>
+                        </nav>
+                    </div>
+                </div>
+                <div class="col-lg-5 d-flex align-items-center bg-glass border-start">
+                    <div class="p-4 p-md-5 w-100">
+                        <small class="text-body-secondary d-block mb-2">Live default example</small>
+                        <div id="hero-field">
+                            <div class="form-input">
+                                <label for="hero-password">Create a password</label>
+                                <input
+                                    class="input-outline"
+                                    id="hero-password"
+                                    data-ui-toggle="passwordstrength"
+                                    type="password"
+                                    autocomplete="new-password"
+                                    placeholder="Try a password">
+                                <div class="form-text">Mix character types and avoid predictable sequences.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="styles">
+            <header class="border-bottom pb-3 mb-4">
+                <span class="text-primary fw-bold">Input presentation</span>
+                <h2 class="h3 mb-1">Filled, outline, and striped</h2>
+                <p class="text-body-secondary mb-0">PasswordStrength uses UI v3 form, progress, spacing, and semantic color classes without component-specific CSS.</p>
+            </header>
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body p-4" id="outline-field">
+                            <span class="badge bg-secondary-subtle text-secondary-subtle mb-3">Default input style</span>
+                            <h3 class="h5">Outline</h3>
+                            <p class="text-body-secondary">A defined boundary with the standard progress indicator.</p>
+                            <div class="form-input">
+                                <label for="outline-password">Outline password</label>
+                                <input
+                                    class="input-outline"
+                                    id="outline-password"
+                                    data-ui-toggle="passwordstrength"
+                                    type="password"
+                                    value="FrostUI3!">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body p-4" id="filled-field">
+                            <span class="badge bg-accent-subtle text-accent-subtle mb-3">Alternative input style</span>
+                            <h3 class="h5">Filled</h3>
+                            <p class="text-body-secondary">A tinted UI surface with the same scoring behavior.</p>
+                            <div class="form-input">
+                                <label for="filled-password">Filled password</label>
+                                <input
+                                    class="input-filled"
+                                    id="filled-password"
+                                    data-ui-toggle="passwordstrength"
+                                    type="password"
+                                    value="password123">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body p-4" id="striped-field">
+                            <span class="badge bg-success-subtle text-success-subtle mb-3">Progress option</span>
+                            <h3 class="h5">Striped</h3>
+                            <p class="text-body-secondary">Add UI's native striped progress treatment.</p>
+                            <div class="form-input">
+                                <label for="striped-password">Striped strength</label>
+                                <input
+                                    class="input-outline"
+                                    id="striped-password"
+                                    data-ui-toggle="passwordstrength"
+                                    data-ui-striped="true"
+                                    type="password"
+                                    value="Str0nger!Pass">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="customization">
+            <header class="border-bottom pb-3 mb-4">
+                <span class="text-accent fw-bold">Configuration</span>
+                <h2 class="h3 mb-1">Custom placement and levels</h2>
+                <p class="text-body-secondary mb-0">Choose a document-wide target or provide a complete threshold, label, and semantic class set.</p>
+            </header>
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-body p-4">
+                            <h3 class="h5">Custom container</h3>
+                            <p class="text-body-secondary">The progress markup is rendered in the target panel instead of after the input wrapper.</p>
+                            <div class="form-input mb-4">
+                                <label for="container-password">Account password</label>
+                                <input
+                                    class="input-filled"
+                                    id="container-password"
+                                    data-ui-toggle="passwordstrength"
+                                    data-ui-container="#custom-strength"
+                                    type="password"
+                                    value="CustomTarget1!">
+                            </div>
+                            <div class="demo-custom-target p-3 rounded-3 bg-ambient" id="custom-strength">
+                                <small class="text-body-secondary">Strength renders here.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-body p-4" id="custom-levels-field">
+                            <h3 class="h5">Custom levels</h3>
+                            <p class="text-body-secondary">This instance replaces every default threshold with custom labels and semantic colors.</p>
+                            <div class="form-input">
+                                <label for="custom-levels-password">Custom feedback</label>
+                                <input
+                                    class="input-outline"
+                                    id="custom-levels-password"
+                                    type="password"
+                                    value="CustomLevels2!">
+                            </div>
+                            <code class="small d-block mt-3">Risky → Improving → Fair → Good → Excellent</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="api">
+            <header class="border-bottom pb-3 mb-4">
+                <span class="text-success fw-bold">Public API</span>
+                <h2 class="h3 mb-1">Instance methods and static scoring</h2>
+                <p class="text-body-secondary mb-0">Initialize or dispose an instance, read its score, or calculate a score without rendering a component.</p>
+            </header>
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card h-100">
+                        <div class="card-body p-4" id="methods-field">
+                            <h3 class="h5">Methods</h3>
+                            <div class="form-input mb-4">
+                                <label for="methods-password">Interactive instance</label>
+                                <input
+                                    class="input-filled"
+                                    id="methods-password"
+                                    type="password"
+                                    value="MethodDemo3!">
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <button class="btn btn-primary ripple" data-demo-method="init" type="button">Init</button>
+                                <button class="btn btn-secondary ripple" data-demo-method="getStrength" type="button">Get strength</button>
+                                <button class="btn btn-outline-danger ripple" data-demo-method="dispose" type="button">Dispose</button>
+                            </div>
+                            <output class="demo-method-output small text-body-secondary d-block" id="method-output" aria-live="polite">Ready.</output>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card h-100 bg-glass">
+                        <div class="card-body p-4">
+                            <h3 class="h5">Static score</h3>
+                            <p class="text-body-secondary"><code>PasswordStrength.getStrength()</code> returns a clamped score without generating markup.</p>
+                            <div class="form-input">
+                                <label for="static-password">Password to score</label>
+                                <input
+                                    class="input-outline"
+                                    id="static-password"
+                                    type="text"
+                                    value="StaticScore4!">
+                            </div>
+                            <output class="demo-score display-5 fw-bold text-primary d-block mt-4" id="static-output" for="static-password" aria-live="polite">0 / 100</output>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="themes">
+            <header class="border-bottom pb-3 mb-4">
+                <span class="text-primary fw-bold">Color modes</span>
+                <h2 class="h3 mb-1">System, light, and dark themes</h2>
+                <p class="text-body-secondary mb-0">Use the page selector for the system-aware theme, or scope an explicit UI theme to any ancestor.</p>
+            </header>
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="card card-body h-100 p-4" id="system-theme-field">
+                        <span class="badge bg-secondary-subtle text-secondary-subtle align-self-start mb-3">System / inherited</span>
+                        <div class="form-input">
+                            <label for="system-theme-password">Inherited theme</label>
+                            <input class="input-outline" id="system-theme-password" data-ui-toggle="passwordstrength" type="password" value="SystemTheme5!">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card card-body h-100 p-4" id="light-theme-field" data-ui-theme="light">
+                        <span class="badge bg-secondary-subtle text-secondary-subtle align-self-start mb-3">Light</span>
+                        <div class="form-input">
+                            <label for="light-theme-password">Light theme</label>
+                            <input class="input-filled" id="light-theme-password" data-ui-toggle="passwordstrength" type="password" value="LightTheme6!">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card card-body h-100 p-4" id="dark-theme-field" data-ui-theme="dark">
+                        <span class="badge bg-secondary-subtle text-secondary-subtle align-self-start mb-3">Dark</span>
+                        <div class="form-input">
+                            <label for="dark-theme-password">Dark theme</label>
+                            <input class="input-outline" id="dark-theme-password" data-ui-toggle="passwordstrength" type="password" value="DarkTheme7!">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="border-top bg-glass">
+        <div class="container py-4 d-flex flex-wrap justify-content-between gap-2">
+            <span class="text-body-secondary">Frost UI PasswordStrength</span>
+            <a href="https://github.com/frost-js/ui-passwordstrength">View the repository</a>
+        </div>
+    </footer>
+</body>
+
+</html>

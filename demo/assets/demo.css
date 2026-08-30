@@ -1,0 +1,11 @@
+.demo-custom-target {
+    min-height: 5rem;
+}
+
+.demo-method-output {
+    min-height: 1.5rem;
+}
+
+.demo-score {
+    font-variant-numeric: tabular-nums;
+}
