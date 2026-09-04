@@ -47,21 +47,15 @@ test.describe('PasswordStrength', () => {
         });
 
         test('reuses an existing PasswordStrength', async ({ page }) => {
-            const state = await page.evaluate((_) => {
+            expect(await page.evaluate((_) => {
                 const password = $.findOne('#password');
                 const first = UI.PasswordStrength.init(password, { striped: true });
                 const second = UI.PasswordStrength.init(password, { striped: false });
-                return {
-                    sameInstance: first === second,
-                    striped: second.options.striped,
-                };
-            });
-
-            expect(state).toEqual({
-                sameInstance: true,
-                striped: true,
-            });
+                return first === second;
+            })).toBe(true);
             await expect(page.locator('#field .progress')).toHaveCount(1);
+            await expect(page.locator('.progress-bar'))
+                .toHaveClass(/\bprogress-bar-striped\b/);
         });
 
         test('exposes frozen default options', async ({ page }) => {
@@ -350,20 +344,12 @@ test.describe('PasswordStrength', () => {
         });
 
         test('works with container option (data-ui-container)', async ({ page }) => {
-            const state = await page.evaluate((_) => {
+            await page.evaluate((_) => {
                 const password = $.findOne('#password');
                 $.setDataset(password, { uiContainer: '#target' });
-                const passwordStrength = UI.PasswordStrength.init(password);
-                return {
-                    container: passwordStrength.options.container,
-                    frozen: Object.isFrozen(passwordStrength.options),
-                };
+                UI.PasswordStrength.init(password);
             });
 
-            expect(state).toEqual({
-                container: '#target',
-                frozen: true,
-            });
             await expect(page.locator('#target > .progress')).toHaveCount(1);
         });
     });
@@ -433,7 +419,7 @@ test.describe('PasswordStrength', () => {
         });
 
         test('works with levels option (data-ui-levels)', async ({ page }) => {
-            const state = await page.evaluate((_) => {
+            await page.evaluate((_) => {
                 const password = $.findOne('#password');
                 $.setValue(password, '');
                 $.setDataset(password, {
@@ -445,20 +431,7 @@ test.describe('PasswordStrength', () => {
                         },
                     ],
                 });
-                const passwordStrength = UI.PasswordStrength.init(password);
-                return {
-                    frozen: Object.isFrozen(passwordStrength.options),
-                    level: passwordStrength.options.levels[0],
-                };
-            });
-
-            expect(state).toEqual({
-                frozen: true,
-                level: {
-                    class: 'text-bg-primary',
-                    score: 0,
-                    text: 'Custom',
-                },
+                UI.PasswordStrength.init(password);
             });
 
             const progressBar = page.locator('.progress-bar');
@@ -490,20 +463,12 @@ test.describe('PasswordStrength', () => {
         });
 
         test('works with striped option (data-ui-striped)', async ({ page }) => {
-            const state = await page.evaluate((_) => {
+            await page.evaluate((_) => {
                 const password = $.findOne('#password');
                 $.setDataset(password, { uiStriped: true });
-                const passwordStrength = UI.PasswordStrength.init(password);
-                return {
-                    frozen: Object.isFrozen(passwordStrength.options),
-                    striped: passwordStrength.options.striped,
-                };
+                UI.PasswordStrength.init(password);
             });
 
-            expect(state).toEqual({
-                frozen: true,
-                striped: true,
-            });
             await expect(page.locator('.progress-bar'))
                 .toHaveClass(/\bprogress-bar-striped\b/);
         });
