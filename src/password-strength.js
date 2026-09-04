@@ -21,6 +21,44 @@ import { getStrength as calculateStrength } from './helpers.js';
  * @augments {BaseComponent<PasswordStrengthOptions>}
  */
 export default class PasswordStrength extends BaseComponent {
+    static classes = {
+        progress: 'progress mt-2',
+        progressBar: 'progress-bar',
+        progressBarStriped: 'progress-bar-striped',
+    };
+    /** @type {PasswordStrengthOptions} */
+    static defaults = {
+        levels: [
+            {
+                score: 0,
+                class: 'text-bg-danger',
+                text: 'Very Weak',
+            },
+            {
+                score: 20,
+                class: 'text-bg-danger',
+                text: 'Weak',
+            },
+            {
+                score: 40,
+                class: 'text-bg-warning',
+                text: 'Normal',
+            },
+            {
+                score: 60,
+                class: 'text-bg-success',
+                text: 'Strong',
+            },
+            {
+                score: 80,
+                class: 'text-bg-success',
+                text: 'Very Strong',
+            },
+        ],
+        container: null,
+        striped: false,
+    };
+
     #container;
     #describedBy;
     #progress;
