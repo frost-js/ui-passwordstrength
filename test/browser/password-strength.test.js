@@ -228,6 +228,41 @@ test.describe('PasswordStrength', () => {
         });
     });
 
+    test.describe('option resolution', () => {
+        test('prefers option arrays over data attribute arrays', async ({ page }) => {
+            expect(await page.evaluate((_) => {
+                const password = document.querySelector('#password');
+                $.setDataset(password, {
+                    uiCommonPasswords: ['password', 'projectsecret'],
+                    uiLevels: [
+                        { score: 0, class: 'text-bg-danger', text: 'Bad' },
+                        { score: 50, class: 'text-bg-success', text: 'Good' },
+                    ],
+                });
+                $.setValue(password, 'password');
+
+                const instance = UI.PasswordStrength.init(password, {
+                    commonPasswords: [],
+                    levels: [{ score: 0, class: 'text-bg-primary' }],
+                });
+
+                return {
+                    commonPasswords: instance.options.commonPasswords,
+                    levels: instance.options.levels,
+                    score: instance.getStrength(),
+                };
+            })).toEqual({
+                commonPasswords: [],
+                levels: [{ score: 0, class: 'text-bg-primary' }],
+                score: 39,
+            });
+
+            await expect(page.locator('.progress-bar')).toHaveText('');
+            await expect(page.locator('.progress-bar'))
+                .toHaveClass('progress-bar text-bg-primary');
+        });
+    });
+
     test.describe('commonPasswords option', () => {
         for (const source of ['options', 'data attributes']) {
             for (const { name, commonPasswords } of [
@@ -254,25 +289,19 @@ test.describe('PasswordStrength', () => {
             }
         }
 
-        for (const { name, init } of [
-            {
-                name: 'option',
-                init: (password) => UI.PasswordStrength.init(password, { commonPasswords: ['projectsecret'] }),
-            },
-            {
-                name: 'data attribute',
-                init: (password) => {
-                    password.dataset.uiCommonPasswords = '["projectsecret"]';
-                    UI.PasswordStrength.init(password);
-                },
-            },
+        for (const { name, options = {}, attributes = {} } of [
+            { name: 'option', options: { commonPasswords: ['projectsecret'] } },
+            { name: 'data attribute', attributes: { 'data-ui-common-passwords': '["projectsecret"]' } },
         ]) {
             test(`recognizes a custom common password (${name})`, async ({ page }) => {
-                const password = await page.evaluateHandle(() => document.querySelector('#password'));
-                await password.evaluate((node) => {
-                    node.value = 'ProjectSecret';
-                });
-                await password.evaluate(init);
+                await page.evaluate(({ options, attributes }) => {
+                    const password = document.querySelector('#password');
+                    password.value = 'ProjectSecret';
+                    for (const [name, value] of Object.entries(attributes)) {
+                        password.setAttribute(name, value);
+                    }
+                    UI.PasswordStrength.init(password, options);
+                }, { options, attributes });
 
                 await expect(page.locator('.progress-bar')).toHaveAttribute('aria-valuenow', '0');
             });
@@ -333,29 +362,19 @@ test.describe('PasswordStrength', () => {
     });
 
     test.describe('container option', () => {
-        for (const { name, init, target } of [
-            {
-                name: 'default',
-                init: (password) => UI.PasswordStrength.init(password),
-                target: '#field',
-            },
-            {
-                name: 'option',
-                init: (password) => UI.PasswordStrength.init(password, { container: '#target' }),
-                target: '#target',
-            },
-            {
-                name: 'data attribute',
-                init: (password) => {
-                    password.dataset.uiContainer = '#target';
-                    UI.PasswordStrength.init(password);
-                },
-                target: '#target',
-            },
+        for (const { name, options = {}, attributes = {}, target } of [
+            { name: 'default', target: '#field' },
+            { name: 'option', options: { container: '#target' }, target: '#target' },
+            { name: 'data attribute', attributes: { 'data-ui-container': '#target' }, target: '#target' },
         ]) {
             test(`uses the ${name} container`, async ({ page }) => {
-                const password = await page.evaluateHandle(() => document.querySelector('#password'));
-                await password.evaluate(init);
+                await page.evaluate(({ options, attributes }) => {
+                    const password = document.querySelector('#password');
+                    for (const [name, value] of Object.entries(attributes)) {
+                        password.setAttribute(name, value);
+                    }
+                    UI.PasswordStrength.init(password, options);
+                }, { options, attributes });
 
                 await expect(page.locator(`${target} > .progress`)).toHaveCount(1);
             });
@@ -363,33 +382,36 @@ test.describe('PasswordStrength', () => {
     });
 
     test.describe('levels option', () => {
-        test('clears previous text for empty and omitted labels', async ({ page }) => {
-            await page.evaluate((_) => {
-                const password = document.querySelector('#password');
-                $.setValue(password, '100');
-                UI.PasswordStrength.init(password, {
-                    scorer: (value) => Number(value),
-                    levels: [
-                        { score: 0, class: 'text-bg-danger' },
-                        { score: 20, class: 'text-bg-warning', text: '' },
-                        { score: 80, class: 'text-bg-success', text: 'Very Strong' },
-                    ],
+        for (const { name, score } of [
+            { name: 'empty', score: '20' },
+            { name: 'omitted', score: '0' },
+        ]) {
+            test(`clears previous text for an ${name} label`, async ({ page }) => {
+                await page.evaluate((_) => {
+                    const password = document.querySelector('#password');
+                    $.setValue(password, '100');
+                    UI.PasswordStrength.init(password, {
+                        scorer: (value) => Number(value),
+                        levels: [
+                            { score: 0, class: 'text-bg-danger' },
+                            { score: 20, class: 'text-bg-warning', text: '' },
+                            { score: 80, class: 'text-bg-success', text: 'Very Strong' },
+                        ],
+                    });
                 });
-            });
 
-            const password = page.locator('#password');
-            const progressBar = page.locator('.progress-bar');
-            await expect(progressBar).toHaveText('Very Strong');
+                const password = page.locator('#password');
+                const progressBar = page.locator('.progress-bar');
+                await expect(progressBar).toHaveText('Very Strong');
 
-            for (const score of ['20', '0']) {
                 await password.fill(score);
                 await expect(progressBar).toHaveAttribute('aria-valuenow', score);
                 await expect(progressBar).toHaveText('');
 
                 await password.fill('100');
                 await expect(progressBar).toHaveText('Very Strong');
-            }
-        });
+            });
+        }
 
         for (const source of ['options', 'data attributes']) {
             test(`replaces level arrays from ${source}`, async ({ page }) => {
@@ -426,39 +448,6 @@ test.describe('PasswordStrength', () => {
                 await expect(progressBar).toHaveClass('progress-bar text-bg-danger');
             });
         }
-
-        test('prefers option arrays over data attribute arrays', async ({ page }) => {
-            expect(await page.evaluate((_) => {
-                const password = document.querySelector('#password');
-                $.setDataset(password, {
-                    uiCommonPasswords: ['password', 'projectsecret'],
-                    uiLevels: [
-                        { score: 0, class: 'text-bg-danger', text: 'Bad' },
-                        { score: 50, class: 'text-bg-success', text: 'Good' },
-                    ],
-                });
-                $.setValue(password, 'password');
-
-                const instance = UI.PasswordStrength.init(password, {
-                    commonPasswords: [],
-                    levels: [{ score: 0, class: 'text-bg-primary' }],
-                });
-
-                return {
-                    commonPasswords: instance.options.commonPasswords,
-                    levels: instance.options.levels,
-                    score: instance.getStrength(),
-                };
-            })).toEqual({
-                commonPasswords: [],
-                levels: [{ score: 0, class: 'text-bg-primary' }],
-                score: 39,
-            });
-
-            await expect(page.locator('.progress-bar')).toHaveText('');
-            await expect(page.locator('.progress-bar'))
-                .toHaveClass('progress-bar text-bg-primary');
-        });
 
         for (const { score, className, text } of [
             { score: 0, className: 'text-bg-danger', text: 'Very Weak' },
@@ -510,29 +499,19 @@ test.describe('PasswordStrength', () => {
     });
 
     test.describe('striped option', () => {
-        for (const { name, init, striped } of [
-            {
-                name: 'default',
-                init: (password) => UI.PasswordStrength.init(password),
-                striped: false,
-            },
-            {
-                name: 'option',
-                init: (password) => UI.PasswordStrength.init(password, { striped: true }),
-                striped: true,
-            },
-            {
-                name: 'data attribute',
-                init: (password) => {
-                    password.dataset.uiStriped = 'true';
-                    UI.PasswordStrength.init(password);
-                },
-                striped: true,
-            },
+        for (const { name, options = {}, attributes = {}, striped } of [
+            { name: 'default', striped: false },
+            { name: 'option', options: { striped: true }, striped: true },
+            { name: 'data attribute', attributes: { 'data-ui-striped': 'true' }, striped: true },
         ]) {
             test(`renders stripes according to the ${name}`, async ({ page }) => {
-                const password = await page.evaluateHandle(() => document.querySelector('#password'));
-                await password.evaluate(init);
+                await page.evaluate(({ options, attributes }) => {
+                    const password = document.querySelector('#password');
+                    for (const [name, value] of Object.entries(attributes)) {
+                        password.setAttribute(name, value);
+                    }
+                    UI.PasswordStrength.init(password, options);
+                }, { options, attributes });
 
                 const progressBar = page.locator('.progress-bar');
                 if (striped) {

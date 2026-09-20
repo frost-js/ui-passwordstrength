@@ -17,19 +17,19 @@ test.describe('PasswordStrength forms', () => {
             });
         });
 
-        for (const { initial, score, text } of [
-            { initial: '', score: 0, text: 'Very Weak' },
-            { initial: 'A1!', score: 14, text: 'Very Weak' },
-            { initial: 'CorrectHorseBatteryStaple', score: 100, text: 'Very Strong' },
+        for (const { initial, current, score, text } of [
+            { initial: '', current: 'CorrectHorseBatteryStaple', score: 0, text: 'Very Weak' },
+            { initial: 'A1!', current: 'CorrectHorseBatteryStaple', score: 14, text: 'Very Weak' },
+            { initial: 'CorrectHorseBatteryStaple', current: 'password', score: 100, text: 'Very Strong' },
         ]) {
             test(`refreshes after resetting to ${initial || 'empty'}`, async ({ page }) => {
-                await page.evaluate(({ initial, score }) => {
+                await page.evaluate(({ initial, current }) => {
                     const password = $.findOne('#password');
                     password.defaultValue = initial;
-                    $.setValue(password, score === 100 ? 'password' : 'CorrectHorseBatteryStaple');
+                    $.setValue(password, current);
                     $.triggerEvent(password, 'input');
                     document.querySelector('#form').reset();
-                }, { initial, score });
+                }, { initial, current });
                 await page.clock.runFor(1);
 
                 await expect(page.locator('#password')).toHaveValue(initial);
