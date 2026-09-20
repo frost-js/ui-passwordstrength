@@ -308,6 +308,143 @@ test.describe('PasswordStrength', () => {
         }
     });
 
+    test.describe('container option', () => {
+        for (const { name, options = {}, attributes = {}, target } of [
+            { name: 'default', target: '#field' },
+            { name: 'option', options: { container: '#target' }, target: '#target' },
+            { name: 'data attribute', attributes: { 'data-ui-container': '#target' }, target: '#target' },
+        ]) {
+            test(`uses the ${name} container`, async ({ page }) => {
+                await page.evaluate(({ options, attributes }) => {
+                    const password = document.querySelector('#password');
+                    for (const [name, value] of Object.entries(attributes)) {
+                        password.setAttribute(name, value);
+                    }
+                    UI.PasswordStrength.init(password, options);
+                }, { options, attributes });
+
+                await expect(page.locator(`${target} > .progress`)).toHaveCount(1);
+            });
+        }
+    });
+
+    test.describe('levels option', () => {
+        for (const { score, className, text } of [
+            { score: 0, className: 'text-bg-danger', text: 'Very Weak' },
+            { score: 19, className: 'text-bg-danger', text: 'Very Weak' },
+            { score: 20, className: 'text-bg-danger', text: 'Weak' },
+            { score: 39, className: 'text-bg-danger', text: 'Weak' },
+            { score: 40, className: 'text-bg-warning', text: 'Normal' },
+            { score: 59, className: 'text-bg-warning', text: 'Normal' },
+            { score: 60, className: 'text-bg-success', text: 'Strong' },
+            { score: 79, className: 'text-bg-success', text: 'Strong' },
+            { score: 80, className: 'text-bg-success', text: 'Very Strong' },
+            { score: 100, className: 'text-bg-success', text: 'Very Strong' },
+        ]) {
+            test(`renders the default level for score ${score}`, async ({ page }) => {
+                await page.evaluate((score) => {
+                    const password = document.querySelector('#password');
+                    password.value = `${score}`;
+                    UI.PasswordStrength.init(password, { scorer: (value) => Number(value) });
+                }, score);
+
+                const progressBar = page.locator('.progress-bar');
+                await expect(progressBar).toHaveCount(1);
+                await expect(progressBar).toHaveClass(`progress-bar ${className}`);
+                await expect(progressBar).toHaveText(text);
+                await expect(progressBar).toHaveAttribute('aria-valuenow', `${score}`);
+                await expect(progressBar).toHaveAttribute('style', `width: ${score}%;`);
+            });
+        }
+
+        for (const source of ['options', 'data attributes']) {
+            for (const text of ['', 'Custom']) {
+                test(`renders a ${text ? 'custom' : 'blank'} level label (${source})`, async ({ page }) => {
+                    await page.evaluate(({ source, text }) => {
+                        const password = document.querySelector('#password');
+                        password.value = '';
+                        const levels = [{ class: 'text-bg-primary', score: 0, text }];
+                        if (source === 'data attributes') {
+                            password.dataset.uiLevels = JSON.stringify(levels);
+                        }
+                        UI.PasswordStrength.init(password, source === 'options' ? { levels } : undefined);
+                    }, { source, text });
+
+                    const progressBar = page.locator('.progress-bar');
+                    await expect(progressBar).toHaveClass('progress-bar text-bg-primary');
+                    await expect(progressBar).toHaveText(text);
+                });
+            }
+        }
+
+        for (const source of ['options', 'data attributes']) {
+            test(`replaces level arrays from ${source}`, async ({ page }) => {
+                expect(await page.evaluate((source) => {
+                    const password = document.querySelector('#password');
+                    const levels = [
+                        { score: 0, class: 'text-bg-danger', text: 'Bad' },
+                        { score: 50, class: 'text-bg-success', text: 'Good' },
+                    ];
+                    const options = { scorer: (value) => Number(value) };
+                    $.setValue(password, '100');
+
+                    if (source === 'data attributes') {
+                        $.setDataset(password, { uiLevels: levels });
+                    } else {
+                        options.levels = levels;
+                    }
+
+                    const instance = UI.PasswordStrength.init(password, options);
+                    levels[1].text = 'Changed';
+
+                    return instance.options.levels;
+                }, source)).toEqual([
+                    { score: 0, class: 'text-bg-danger', text: 'Bad' },
+                    { score: 50, class: 'text-bg-success', text: 'Good' },
+                ]);
+
+                const progressBar = page.locator('.progress-bar');
+                await expect(progressBar).toHaveText('Good');
+                await expect(progressBar).toHaveClass('progress-bar text-bg-success');
+
+                await page.locator('#password').fill('25');
+                await expect(progressBar).toHaveText('Bad');
+                await expect(progressBar).toHaveClass('progress-bar text-bg-danger');
+            });
+        }
+
+        for (const { name, score } of [
+            { name: 'empty', score: '20' },
+            { name: 'omitted', score: '0' },
+        ]) {
+            test(`clears previous text for an ${name} label`, async ({ page }) => {
+                await page.evaluate((_) => {
+                    const password = document.querySelector('#password');
+                    $.setValue(password, '100');
+                    UI.PasswordStrength.init(password, {
+                        scorer: (value) => Number(value),
+                        levels: [
+                            { score: 0, class: 'text-bg-danger' },
+                            { score: 20, class: 'text-bg-warning', text: '' },
+                            { score: 80, class: 'text-bg-success', text: 'Very Strong' },
+                        ],
+                    });
+                });
+
+                const password = page.locator('#password');
+                const progressBar = page.locator('.progress-bar');
+                await expect(progressBar).toHaveText('Very Strong');
+
+                await password.fill(score);
+                await expect(progressBar).toHaveAttribute('aria-valuenow', score);
+                await expect(progressBar).toHaveText('');
+
+                await password.fill('100');
+                await expect(progressBar).toHaveText('Very Strong');
+            });
+        }
+    });
+
     test.describe('scorer option', () => {
         test('works with scorer option', async ({ page }) => {
             await page.evaluate((_) => {
@@ -358,143 +495,6 @@ test.describe('PasswordStrength', () => {
                 await expect(progressBar).toHaveAttribute('aria-valuenow', `${expected}`);
                 await expect(progressBar).toHaveAttribute('style', `width: ${expected}%;`);
             });
-        }
-    });
-
-    test.describe('container option', () => {
-        for (const { name, options = {}, attributes = {}, target } of [
-            { name: 'default', target: '#field' },
-            { name: 'option', options: { container: '#target' }, target: '#target' },
-            { name: 'data attribute', attributes: { 'data-ui-container': '#target' }, target: '#target' },
-        ]) {
-            test(`uses the ${name} container`, async ({ page }) => {
-                await page.evaluate(({ options, attributes }) => {
-                    const password = document.querySelector('#password');
-                    for (const [name, value] of Object.entries(attributes)) {
-                        password.setAttribute(name, value);
-                    }
-                    UI.PasswordStrength.init(password, options);
-                }, { options, attributes });
-
-                await expect(page.locator(`${target} > .progress`)).toHaveCount(1);
-            });
-        }
-    });
-
-    test.describe('levels option', () => {
-        for (const { name, score } of [
-            { name: 'empty', score: '20' },
-            { name: 'omitted', score: '0' },
-        ]) {
-            test(`clears previous text for an ${name} label`, async ({ page }) => {
-                await page.evaluate((_) => {
-                    const password = document.querySelector('#password');
-                    $.setValue(password, '100');
-                    UI.PasswordStrength.init(password, {
-                        scorer: (value) => Number(value),
-                        levels: [
-                            { score: 0, class: 'text-bg-danger' },
-                            { score: 20, class: 'text-bg-warning', text: '' },
-                            { score: 80, class: 'text-bg-success', text: 'Very Strong' },
-                        ],
-                    });
-                });
-
-                const password = page.locator('#password');
-                const progressBar = page.locator('.progress-bar');
-                await expect(progressBar).toHaveText('Very Strong');
-
-                await password.fill(score);
-                await expect(progressBar).toHaveAttribute('aria-valuenow', score);
-                await expect(progressBar).toHaveText('');
-
-                await password.fill('100');
-                await expect(progressBar).toHaveText('Very Strong');
-            });
-        }
-
-        for (const source of ['options', 'data attributes']) {
-            test(`replaces level arrays from ${source}`, async ({ page }) => {
-                expect(await page.evaluate((source) => {
-                    const password = document.querySelector('#password');
-                    const levels = [
-                        { score: 0, class: 'text-bg-danger', text: 'Bad' },
-                        { score: 50, class: 'text-bg-success', text: 'Good' },
-                    ];
-                    const options = { scorer: (value) => Number(value) };
-                    $.setValue(password, '100');
-
-                    if (source === 'data attributes') {
-                        $.setDataset(password, { uiLevels: levels });
-                    } else {
-                        options.levels = levels;
-                    }
-
-                    const instance = UI.PasswordStrength.init(password, options);
-                    levels[1].text = 'Changed';
-
-                    return instance.options.levels;
-                }, source)).toEqual([
-                    { score: 0, class: 'text-bg-danger', text: 'Bad' },
-                    { score: 50, class: 'text-bg-success', text: 'Good' },
-                ]);
-
-                const progressBar = page.locator('.progress-bar');
-                await expect(progressBar).toHaveText('Good');
-                await expect(progressBar).toHaveClass('progress-bar text-bg-success');
-
-                await page.locator('#password').fill('25');
-                await expect(progressBar).toHaveText('Bad');
-                await expect(progressBar).toHaveClass('progress-bar text-bg-danger');
-            });
-        }
-
-        for (const { score, className, text } of [
-            { score: 0, className: 'text-bg-danger', text: 'Very Weak' },
-            { score: 19, className: 'text-bg-danger', text: 'Very Weak' },
-            { score: 20, className: 'text-bg-danger', text: 'Weak' },
-            { score: 39, className: 'text-bg-danger', text: 'Weak' },
-            { score: 40, className: 'text-bg-warning', text: 'Normal' },
-            { score: 59, className: 'text-bg-warning', text: 'Normal' },
-            { score: 60, className: 'text-bg-success', text: 'Strong' },
-            { score: 79, className: 'text-bg-success', text: 'Strong' },
-            { score: 80, className: 'text-bg-success', text: 'Very Strong' },
-            { score: 100, className: 'text-bg-success', text: 'Very Strong' },
-        ]) {
-            test(`renders the default level for score ${score}`, async ({ page }) => {
-                await page.evaluate((score) => {
-                    const password = document.querySelector('#password');
-                    password.value = `${score}`;
-                    UI.PasswordStrength.init(password, { scorer: (value) => Number(value) });
-                }, score);
-
-                const progressBar = page.locator('.progress-bar');
-                await expect(progressBar).toHaveCount(1);
-                await expect(progressBar).toHaveClass(`progress-bar ${className}`);
-                await expect(progressBar).toHaveText(text);
-                await expect(progressBar).toHaveAttribute('aria-valuenow', `${score}`);
-                await expect(progressBar).toHaveAttribute('style', `width: ${score}%;`);
-            });
-        }
-
-        for (const source of ['options', 'data attributes']) {
-            for (const text of ['', 'Custom']) {
-                test(`renders a ${text ? 'custom' : 'blank'} level label (${source})`, async ({ page }) => {
-                    await page.evaluate(({ source, text }) => {
-                        const password = document.querySelector('#password');
-                        password.value = '';
-                        const levels = [{ class: 'text-bg-primary', score: 0, text }];
-                        if (source === 'data attributes') {
-                            password.dataset.uiLevels = JSON.stringify(levels);
-                        }
-                        UI.PasswordStrength.init(password, source === 'options' ? { levels } : undefined);
-                    }, { source, text });
-
-                    const progressBar = page.locator('.progress-bar');
-                    await expect(progressBar).toHaveClass('progress-bar text-bg-primary');
-                    await expect(progressBar).toHaveText(text);
-                });
-            }
         }
     });
 

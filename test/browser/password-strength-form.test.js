@@ -40,6 +40,20 @@ test.describe('PasswordStrength forms', () => {
             });
         }
 
+        test('handles an input associated with an external form', async ({ page }) => {
+            await page.evaluate((_) => {
+                $.append(document.body, '<div id="field2"><input id="password2" form="form" value="CorrectHorseBatteryStaple"></div>');
+                UI.PasswordStrength.init($.findOne('#password2'));
+                $.setValue('#password2', 'password');
+                $.triggerEvent('#password2', 'input');
+                document.querySelector('#form').reset();
+            });
+            await page.clock.runFor(1);
+
+            await expect(page.locator('#password2')).toHaveValue('CorrectHorseBatteryStaple');
+            await expect(page.locator('#field2 .progress-bar')).toHaveAttribute('aria-valuenow', '100');
+        });
+
         test('does not refresh when reset is canceled', async ({ page }) => {
             await page.locator('#password').fill('CorrectHorseBatteryStaple');
             await page.evaluate((_) => {
@@ -100,20 +114,6 @@ test.describe('PasswordStrength forms', () => {
             await expect(page.locator('#password2')).toHaveValue('CorrectHorseBatteryStaple');
             await expect(page.locator('#field2 .progress-bar')).toHaveAttribute('aria-valuenow', '100');
             await expect(page.locator('#field2 .progress-bar')).toHaveText('Very Strong');
-        });
-
-        test('handles an input associated with an external form', async ({ page }) => {
-            await page.evaluate((_) => {
-                $.append(document.body, '<div id="field2"><input id="password2" form="form" value="CorrectHorseBatteryStaple"></div>');
-                UI.PasswordStrength.init($.findOne('#password2'));
-                $.setValue('#password2', 'password');
-                $.triggerEvent('#password2', 'input');
-                document.querySelector('#form').reset();
-            });
-            await page.clock.runFor(1);
-
-            await expect(page.locator('#password2')).toHaveValue('CorrectHorseBatteryStaple');
-            await expect(page.locator('#field2 .progress-bar')).toHaveAttribute('aria-valuenow', '100');
         });
     });
 });
