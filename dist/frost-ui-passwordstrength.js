@@ -96,24 +96,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		}
 	];
 	/**
-	* Clamps a value between a minimum and a maximum.
-	* @param {number} value The value to clamp.
-	* @param {number} min The minimum value of the clamped range.
-	* @param {number} max The maximum value of the clamped range.
-	* @returns {number} The clamped value.
-	*/
-	var clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-	/**
-	* Maps a value from one range to another.
-	* @param {number} value The value to map.
-	* @param {number} fromMin The minimum value of the current range.
-	* @param {number} fromMax The maximum value of the current range.
-	* @param {number} toMin The minimum value of the target range.
-	* @param {number} toMax The maximum value of the target range.
-	* @returns {number} The mapped value.
-	*/
-	var map = (value, fromMin, fromMax, toMin, toMax) => (value - fromMin) * (toMax - toMin) / (fromMax - fromMin) + toMin;
-	/**
 	* Gets the type of a password character.
 	* @param {string} character The character.
 	* @returns {string} The character type.
@@ -126,7 +108,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 	*/
 	var getLengthStrength = (characters) => {
 		const band = lengthBands.find(({ end }) => characters.length <= end) || lengthBands.at(-1);
-		const score = Math.round(map(Math.min(characters.length, band.end), band.start, band.end, band.min, band.max));
+		const score = Math.round(_fr0st_query.default._map(Math.min(characters.length, band.end), band.start, band.end, band.min, band.max));
 		const diversity = new Set(characters.map(getCharacterType)).size;
 		return Math.min(score + (diversity - 1) * 2, band.max);
 	};
@@ -236,7 +218,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		if (repeatedPattern?.length === 1) return 0;
 		if (repeatedPattern) return Math.min(score, getLengthStrength(repeatedPattern), 15);
 		const predictableCount = getPredictableCount(characters);
-		return clamp(score - predictableCount, 0, predictableCount === characters.length ? 15 : 100);
+		return _fr0st_query.default._clamp(score - predictableCount, 0, predictableCount === characters.length ? 15 : 100);
 	};
 
 //#endregion

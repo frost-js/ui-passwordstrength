@@ -1,3 +1,5 @@
+import $ from '@fr0st/query';
+
 const characterTypes = [
     { pattern: /\p{Ll}/u, type: 'lower' },
     { pattern: /\p{Lu}/u, type: 'upper' },
@@ -35,37 +37,6 @@ const lengthBands = [
 ];
 
 /**
- * Clamps a value between a minimum and a maximum.
- * @param {number} value The value to clamp.
- * @param {number} min The minimum value of the clamped range.
- * @param {number} max The maximum value of the clamped range.
- * @returns {number} The clamped value.
- */
-const clamp = (value, min, max) =>
-    Math.max(
-        min,
-        Math.min(
-            max,
-            value,
-        ),
-    );
-
-/**
- * Maps a value from one range to another.
- * @param {number} value The value to map.
- * @param {number} fromMin The minimum value of the current range.
- * @param {number} fromMax The maximum value of the current range.
- * @param {number} toMin The minimum value of the target range.
- * @param {number} toMax The maximum value of the target range.
- * @returns {number} The mapped value.
- */
-const map = (value, fromMin, fromMax, toMin, toMax) =>
-    (value - fromMin) *
-    (toMax - toMin) /
-    (fromMax - fromMin) +
-    toMin;
-
-/**
  * Gets the type of a password character.
  * @param {string} character The character.
  * @returns {string} The character type.
@@ -85,7 +56,7 @@ const getLengthStrength = (characters) => {
         ({ end }) => characters.length <= end,
     ) || lengthBands.at(-1);
     const score = Math.round(
-        map(
+        $._map(
             Math.min(characters.length, band.end),
             band.start,
             band.end,
@@ -294,7 +265,7 @@ export const getStrength = (password, commonPasswords = []) => {
 
     const predictableCount = getPredictableCount(characters);
 
-    return clamp(
+    return $._clamp(
         score - predictableCount,
         0,
         predictableCount === characters.length ? 15 : 100,
