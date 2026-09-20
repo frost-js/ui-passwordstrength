@@ -285,8 +285,10 @@ var PasswordStrength = class extends BaseComponent {
 	};
 	#container;
 	#describedBy;
+	#form;
 	#progress;
 	#progressBar;
+	#resetHandler;
 	/**
 	* Calculates the strength of a password.
 	* @param {string} password The password.
@@ -303,6 +305,7 @@ var PasswordStrength = class extends BaseComponent {
 	*/
 	constructor(node, options) {
 		super(node, options);
+		this.#form = this.node.form;
 		const overrides = {
 			...getDataset(node),
 			...options
@@ -321,11 +324,14 @@ var PasswordStrength = class extends BaseComponent {
 	dispose() {
 		$.remove(this.#progress);
 		$.removeEvent(this.node, "input.ui.passwordstrength");
+		if (this.#form) $.removeEvent(this.#form, "reset.ui.passwordstrength", this.#resetHandler);
 		if (this.#describedBy === null) $.removeAttribute(this.node, "aria-describedby");
 		else $.setAttribute(this.node, { "aria-describedby": this.#describedBy });
 		this.#container = null;
+		this.#form = null;
 		this.#progress = null;
 		this.#progressBar = null;
+		this.#resetHandler = null;
 		super.dispose();
 	}
 	/**
@@ -341,6 +347,14 @@ var PasswordStrength = class extends BaseComponent {
 	* Attaches events for the PasswordStrength.
 	*/
 	#events() {
+		if (this.#form) {
+			this.#resetHandler = (event) => {
+				setTimeout(() => {
+					if (this.node && !event.defaultPrevented) this.#refresh();
+				}, 0);
+			};
+			$.addEvent(this.#form, "reset.ui.passwordstrength", this.#resetHandler);
+		}
 		$.addEvent(this.node, "input.ui.passwordstrength", (_) => {
 			this.#refresh();
 		});

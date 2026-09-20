@@ -12,6 +12,7 @@ Password-strength indicator for Frost UI with configurable thresholds, semantic 
 ## Highlights
 
 - Live scoring driven by the password input's native `input` event
+- Automatic refresh after a form reset, unless the reset is canceled
 - Configurable ordered thresholds, labels, and Frost UI semantic color classes
 - Default or explicit progress-container placement
 - Optional UI v4 striped progress treatment
@@ -289,7 +290,7 @@ Pass an options object to initialize every matched input, or pass a public metho
 - The active level's text is rendered inside the progress bar when the level supplies a label.
 - A unique generated progress ID is appended to the input's existing `aria-describedby` value instead of replacing it.
 - Disposal restores the original `aria-describedby` state exactly, including absent and empty values.
-- Disposal also removes the generated progress markup, namespaced input listener, and registered component data.
+- Disposal also removes the generated progress markup, namespaced input and form-reset listeners, and registered component data.
 - The original password input remains the interactive and submitted form control.
 
 Applications remain responsible for meaningful labels, password requirements, validation feedback, and error messages. Treat the displayed score as guidance rather than proof that a password is safe.
