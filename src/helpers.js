@@ -288,9 +288,9 @@ export const getStrength = (password, commonPasswords = []) => {
 
     const predictableCount = getPredictableCount(characters);
 
-    if (predictableCount === characters.length) {
-        return Math.min(score - predictableCount, 15);
-    }
-
-    return clamp(score - predictableCount, 0, 100);
+    return clamp(
+        score - predictableCount,
+        0,
+        predictableCount === characters.length ? 15 : 100,
+    );
 };

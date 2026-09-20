@@ -307,6 +307,14 @@ test.describe('PasswordStrength', () => {
             });
         });
 
+        test('clamps fully predictable passwords between zero and fifteen', async ({ page }) => {
+            expect(await page.evaluate((_) =>
+                [12, 48, 50, 60, 100].map((length) =>
+                    UI.PasswordStrength.getStrength('a'.repeat(length) + 'b'.repeat(length)),
+                )))
+                .toEqual([15, 4, 0, 0, 0]);
+        });
+
         test('uses length as the primary strength factor', async ({ page }) => {
             expect(await page.evaluate((_) => [
                 'gT7!',

@@ -114,8 +114,6 @@ export default class PasswordStrength extends BaseComponent {
     constructor(node, options) {
         super(node, options);
 
-        this.#form = this.node.form;
-
         const overrides = { ...getDataset(node), ...options };
 
         // Replace supplied arrays instead of merging them with default entries.
@@ -125,6 +123,8 @@ export default class PasswordStrength extends BaseComponent {
                 $._extend(this.options[key], overrides[key]);
             }
         }
+
+        this.#form = this.node.form;
 
         if (this.options.container) {
             this.#container = $.findOne(this.options.container);

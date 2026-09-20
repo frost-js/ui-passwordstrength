@@ -226,8 +226,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		if (repeatedPattern?.length === 1) return 0;
 		if (repeatedPattern) return Math.min(score, getLengthStrength(repeatedPattern), 15);
 		const predictableCount = getPredictableCount(characters);
-		if (predictableCount === characters.length) return Math.min(score - predictableCount, 15);
-		return clamp(score - predictableCount, 0, 100);
+		return clamp(score - predictableCount, 0, predictableCount === characters.length ? 15 : 100);
 	};
 
 //#endregion
@@ -337,7 +336,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		*/
 		constructor(node, options) {
 			super(node, options);
-			this.#form = this.node.form;
 			const overrides = {
 				...(0, _fr0st_ui.getDataset)(node),
 				...options
@@ -346,6 +344,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.options[key].length = 0;
 				_fr0st_query.default._extend(this.options[key], overrides[key]);
 			}
+			this.#form = this.node.form;
 			if (this.options.container) this.#container = _fr0st_query.default.findOne(this.options.container);
 			else this.#container = _fr0st_query.default.closest(this.node, ":not(.form-input):not(.input-group)").shift();
 			this.#render();

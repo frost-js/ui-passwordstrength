@@ -194,8 +194,7 @@ var getStrength = (password, commonPasswords = []) => {
 	if (repeatedPattern?.length === 1) return 0;
 	if (repeatedPattern) return Math.min(score, getLengthStrength(repeatedPattern), 15);
 	const predictableCount = getPredictableCount(characters);
-	if (predictableCount === characters.length) return Math.min(score - predictableCount, 15);
-	return clamp(score - predictableCount, 0, 100);
+	return clamp(score - predictableCount, 0, predictableCount === characters.length ? 15 : 100);
 };
 
 //#endregion
@@ -305,7 +304,6 @@ var PasswordStrength = class extends BaseComponent {
 	*/
 	constructor(node, options) {
 		super(node, options);
-		this.#form = this.node.form;
 		const overrides = {
 			...getDataset(node),
 			...options
@@ -314,6 +312,7 @@ var PasswordStrength = class extends BaseComponent {
 			this.options[key].length = 0;
 			$._extend(this.options[key], overrides[key]);
 		}
+		this.#form = this.node.form;
 		if (this.options.container) this.#container = $.findOne(this.options.container);
 		else this.#container = $.closest(this.node, ":not(.form-input):not(.input-group)").shift();
 		this.#render();
