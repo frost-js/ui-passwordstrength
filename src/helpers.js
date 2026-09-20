@@ -164,6 +164,7 @@ const getPasswordVariants = (password) => {
     ];
 
     return new Set([
+        normalizeLeet(password),
         ...variants,
         ...variants.map(normalizeLeet),
     ]);

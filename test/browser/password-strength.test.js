@@ -327,6 +327,19 @@ test.describe('PasswordStrength', () => {
                 .toEqual([19, 39, 66, 86, 96, 100]);
         });
 
+        test('recognizes boundary substitutions and decorations in common passwords', async ({ page }) => {
+            expect(await page.evaluate((_) => [
+                ['@dministrator', 'administrator'],
+                ['$ecret', 'secret'],
+                ['acces$', 'access'],
+                ['@password!', 'password'],
+                ['p@ssw0rd1!', 'password'],
+            ].map(([password, commonPassword]) =>
+                UI.PasswordStrength.getStrength(password, [commonPassword]),
+            )))
+                .toEqual([5, 5, 5, 5, 5]);
+        });
+
         test('works with a custom common-password list', async ({ page }) => {
             expect(await page.evaluate((_) => ({
                 defaultList: UI.PasswordStrength.getStrength('FrostJS'),

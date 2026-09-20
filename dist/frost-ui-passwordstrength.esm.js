@@ -128,7 +128,11 @@ var normalizeLeet = (password) => Array.from(password, (character) => leetCharac
 var getPasswordVariants = (password) => {
 	const undecorated = password.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
 	const variants = [undecorated, undecorated.replace(/^\d+|\d+$/g, "")];
-	return /* @__PURE__ */ new Set([...variants, ...variants.map(normalizeLeet)]);
+	return /* @__PURE__ */ new Set([
+		normalizeLeet(password),
+		...variants,
+		...variants.map(normalizeLeet)
+	]);
 };
 /**
 * Gets the score for a common password.
