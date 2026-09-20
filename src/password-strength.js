@@ -204,14 +204,9 @@ export default class PasswordStrength extends BaseComponent {
     #refresh() {
         const strength = this.getStrength();
 
-        let nextLevel;
-        for (const level of this.options.levels) {
-            if (strength < level.score) {
-                break;
-            }
-
-            nextLevel = level;
-        }
+        const nextLevel = this.options.levels.findLast(
+            (level) => strength >= level.score,
+        );
 
         $.setStyle(this.#progressBar, { width: `${strength}%` });
         $.setAttribute(this.#progressBar, {

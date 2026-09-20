@@ -175,7 +175,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 	var getCommonPasswordStrength = (password, commonPasswords) => {
 		const common = new Set(commonPasswords.map(normalizePassword));
 		if (common.has(password)) return 0;
-		return Array.from(getPasswordVariants(password)).some((variant) => common.has(variant)) ? 5 : null;
+		return common.isDisjointFrom(getPasswordVariants(password)) ? null : 5;
 	};
 	/**
 	* Checks whether characters form an ascending or descending sequence.
@@ -208,11 +208,15 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 	* @param {string[]} characters The password characters.
 	* @returns {number} The number of predictable characters.
 	*/
-	var getPredictableCount = (characters) => new Set(characters.slice(0, -2).flatMap((_, index) => isPredictable(characters.slice(index, index + 3)) ? [
-		index,
-		index + 1,
-		index + 2
-	] : [])).size;
+	var getPredictableCount = (characters) => {
+		const indices = /* @__PURE__ */ new Set();
+		for (let i = 0; i + 2 < characters.length; i++) if (isPredictable(characters.slice(i, i + 3))) {
+			indices.add(i);
+			indices.add(i + 1);
+			indices.add(i + 2);
+		}
+		return indices.size;
+	};
 	/**
 	* Calculates the strength of a password.
 	* @param {string} password The password.
@@ -399,11 +403,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		*/
 		#refresh() {
 			const strength = this.getStrength();
-			let nextLevel;
-			for (const level of this.options.levels) {
-				if (strength < level.score) break;
-				nextLevel = level;
-			}
+			const nextLevel = this.options.levels.findLast((level) => strength >= level.score);
 			_fr0st_query.default.setStyle(this.#progressBar, { width: `${strength}%` });
 			_fr0st_query.default.setAttribute(this.#progressBar, {
 				"class": this.constructor.classes.progressBar,

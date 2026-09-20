@@ -185,9 +185,7 @@ const getCommonPasswordStrength = (password, commonPasswords) => {
         return 0;
     }
 
-    return Array.from(getPasswordVariants(password)).some(
-        (variant) => common.has(variant),
-    ) ? 5 : null;
+    return common.isDisjointFrom(getPasswordVariants(password)) ? null : 5;
 };
 
 /**
@@ -237,17 +235,19 @@ const isPredictable = (characters) =>
  * @param {string[]} characters The password characters.
  * @returns {number} The number of predictable characters.
  */
-const getPredictableCount = (characters) =>
-    new Set(
-        characters
-            .slice(0, -2)
-            .flatMap(
-                (_, index) =>
-                    isPredictable(characters.slice(index, index + 3)) ?
-                        [index, index + 1, index + 2] :
-                        [],
-            ),
-    ).size;
+const getPredictableCount = (characters) => {
+    const indices = new Set();
+
+    for (let i = 0; i + 2 < characters.length; i++) {
+        if (isPredictable(characters.slice(i, i + 3))) {
+            indices.add(i);
+            indices.add(i + 1);
+            indices.add(i + 2);
+        }
+    }
+
+    return indices.size;
+};
 
 /**
  * Calculates the strength of a password.
