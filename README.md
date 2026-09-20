@@ -29,7 +29,7 @@ Password-strength indicator for Frost UI with configurable thresholds, semantic 
 
 ### Browser projects / bundlers
 
-Install PasswordStrength with its Frost UI 4 and fQuery 5 peers:
+Install PasswordStrength with its Frost UI v4 and fQuery v5 peers:
 
 ```bash
 npm i @fr0st/ui-passwordstrength @fr0st/ui @fr0st/query
@@ -98,6 +98,8 @@ Load Frost UI's all-in-one bundle before PasswordStrength. The UI bundle supplie
 
 The UMD bundle adds `PasswordStrength` to the existing `globalThis.UI` object. It expects `globalThis.UI` and `globalThis.fQuery` to exist before it loads. If the non-bundled Frost UI build is used instead, load fQuery, Frost UI, and PasswordStrength in that order.
 
+Do not load the separate fQuery script when using `frost-ui-bundle.js` or `frost-ui-bundle.min.js`.
+
 ## Usage
 
 Start with a normal password input inside a Frost UI form control. By default, PasswordStrength inserts its progress markup into the closest ancestor that is not `.form-input` or `.input-group`:
@@ -129,6 +131,10 @@ console.log(passwordStrength.getStrength());
 
 Calling `PasswordStrength.init()` again for the same input returns its existing instance. Dispose the current instance before reinitializing the input with different options.
 
+The indicator renders the initial value and refreshes on `input` events. After changing the input's value in JavaScript, dispatch an `input` event to refresh the indicator; `getStrength()` only returns the current score.
+
+Form resets refresh the indicator after the browser restores the input's default value. This refresh is deferred until after the reset event finishes and is skipped if the reset is canceled. Inputs associated with a form through the `form` attribute are also supported.
+
 ## Options
 
 Options are resolved in this order:
@@ -139,15 +145,17 @@ Options are resolved in this order:
 
 Resolved `instance.options` are frozen.
 
+Supplied `levels` and `commonPasswords` arrays replace the corresponding defaults completely, including when supplied through data attributes. Arrays passed through JavaScript options take precedence over arrays from data attributes. Supplied arrays and level objects are copied into the resolved configuration.
+
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `commonPasswords` | `string[]` | See below | Passwords the built-in scorer treats as very weak. Matching is case-insensitive and recognizes simple decorations and common leet substitutions. |
+| `commonPasswords` | `string[]` | `PasswordStrength.defaults.commonPasswords` | Passwords the built-in scorer treats as very weak. Matching is case-insensitive and recognizes simple decorations and common leet substitutions. |
 | `container` | `string \| null` | `null` | CSS selector for the element that receives the generated progress markup. `null` uses the closest field container. |
 | `levels` | `PasswordStrengthLevel[]` | See below | Ordered score thresholds with a semantic class and optional label. |
 | `scorer` | `(password, commonPasswords) => number` | Built-in scorer | Calculate a score for the current password. Results are normalized and clamped between `0` and `100`. |
 | `striped` | `boolean` | `false` | Apply UI's `progress-bar-striped` class to the generated progress bar. |
 
-The default common-password list is intentionally small to keep the bundle lightweight. Extend it with application-specific terms:
+The default common-password list is intentionally small to keep the bundle lightweight. Pass `commonPasswords: []` to disable list matching while retaining the other scoring rules. To extend the default list with application-specific terms, include the defaults explicitly:
 
 ```js
 PasswordStrength.init(node, {
@@ -173,7 +181,7 @@ PasswordStrength.init(node, {
 });
 ```
 
-Each level has a numeric `score`, a CSS `class`, and an optional `text` label. Defaults are ordered from lowest to highest threshold:
+Each level has a numeric `score`, a CSS `class`, and an optional `text` label. An empty or omitted label clears the previous label. Defaults are ordered from lowest to highest threshold:
 
 | Score | Class | Text |
 | ---: | --- | --- |
@@ -199,7 +207,7 @@ const passwordStrength = PasswordStrength.init(node, {
 });
 ```
 
-The first level should start at `0`, and levels should be sorted by ascending score. Scores are clamped between `0` and `100`.
+Provide at least one level, starting at `0`, and sort levels by ascending score. The last level whose threshold is less than or equal to the score is selected. Scores are clamped between `0` and `100`.
 
 ## Data attributes
 
@@ -237,7 +245,7 @@ The `data-ui-toggle` attribute does not initialize PasswordStrength by itself.
 | --- | --- | --- |
 | `PasswordStrength.init(node, options?)` | `PasswordStrength` | Return the existing instance for an input or create one. |
 | `getStrength()` | `number` | Score the instance input's current value from `0` to `100`. |
-| `dispose()` | `void` | Remove generated markup, input events, and registered component state, then restore the original ARIA state. |
+| `dispose()` | `void` | Remove generated markup, input and form-reset listeners, and registered component state, then restore the original ARIA state. |
 
 ```js
 const passwordStrength = PasswordStrength.init(node, {
@@ -261,7 +269,17 @@ const score = PasswordStrength.getStrength('CorrectHorseBatteryStaple');
 console.log(score); // 100
 ```
 
-The built-in scorer treats length as the primary strength factor. It heavily penalizes configured common passwords and simple variants, repeated characters and substrings, ascending and descending sequences, and keyboard-row patterns. Character variety provides only a small adjustment within each length band. Unicode is normalized and counted by code point.
+The static method always uses the built-in scorer and returns a score from `0` to `100`. It uses `PasswordStrength.defaults.commonPasswords` unless a replacement list is supplied as the second argument. An instance's custom `scorer` and options do not change the static method.
+
+The built-in scorer treats length as the primary strength factor. It heavily penalizes configured common passwords and simple variants, repeated characters and substrings, ascending and descending sequences, and keyboard-row patterns. Character variety provides only a small adjustment within each length band. Unicode is normalized with NFKC and counted by code point.
+
+Common-password matches after case and Unicode normalization score `0`; recognized variants score `5`. Variant matching handles decorations, numeric prefixes or suffixes, and common leet substitutions, including combinations such as:
+
+```js
+PasswordStrength.getStrength('administrator', ['administrator']); // 0
+PasswordStrength.getStrength('@dministrator!', ['administrator']); // 5
+PasswordStrength.getStrength('!@dministrator123!', ['administrator']); // 5
+```
 
 It is a lightweight UI feedback heuristic, not an entropy estimate, breach check, or substitute for application security policy.
 
@@ -297,13 +315,19 @@ Applications remain responsible for meaningful labels, password requirements, va
 
 ## Development
 
+Use Node.js matching `^20.19.0 || ^22.13.0 || >=24`. Install dependencies with `npm ci`, then install Playwright browsers with `npx playwright install --with-deps`.
+
 ```bash
 npm test
 npm run lint
 npm run build
 ```
 
-`npm test` builds the bundles and runs the Playwright suite in Chromium, Firefox, and WebKit.
+`npm test` rebuilds JavaScript, then runs the Playwright suite in Chromium, Firefox, and WebKit. `npm run test:browser` runs the suite against the existing bundles, so rebuild after changing source files.
+
+After building, `npm run test:coverage` runs Chromium tests and writes coverage reports to `coverage/`.
+
+`npm run test:headed` and `npm run test:ui` also use the existing bundles and open headed browsers or the Playwright UI.
 
 ## License
 
