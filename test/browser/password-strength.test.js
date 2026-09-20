@@ -357,6 +357,33 @@ test.describe('PasswordStrength', () => {
     });
 
     test.describe('commonPasswords option', () => {
+        for (const source of ['options', 'data attributes']) {
+            test(`replaces common-password arrays from ${source}`, async ({ page }) => {
+                expect(await page.evaluate((source) =>
+                    [['projectsecret'], []].map((commonPasswords, index) => {
+                        const password = $.findOne(index ? '#password2' : '#password');
+                        $.setValue(password, 'password');
+
+                        if (source === 'data attributes') {
+                            $.setDataset(password, { uiCommonPasswords: commonPasswords });
+                        }
+
+                        const instance = UI.PasswordStrength.init(
+                            password,
+                            source === 'options' ? { commonPasswords } : undefined,
+                        );
+
+                        return {
+                            commonPasswords: instance.options.commonPasswords,
+                            score: instance.getStrength(),
+                        };
+                    }), source)).toEqual([
+                    { commonPasswords: ['projectsecret'], score: 39 },
+                    { commonPasswords: [], score: 39 },
+                ]);
+            });
+        }
+
         test('works with commonPasswords option', async ({ page }) => {
             await page.evaluate((_) => {
                 const password = $.findOne('#password');
@@ -460,6 +487,75 @@ test.describe('PasswordStrength', () => {
     });
 
     test.describe('levels option', () => {
+        for (const source of ['options', 'data attributes']) {
+            test(`replaces level arrays from ${source}`, async ({ page }) => {
+                expect(await page.evaluate((source) => {
+                    const password = $.findOne('#password');
+                    const levels = [
+                        { score: 0, class: 'text-bg-danger', text: 'Bad' },
+                        { score: 50, class: 'text-bg-success', text: 'Good' },
+                    ];
+                    const options = { scorer: (value) => Number(value) };
+                    $.setValue(password, '100');
+
+                    if (source === 'data attributes') {
+                        $.setDataset(password, { uiLevels: levels });
+                    } else {
+                        options.levels = levels;
+                    }
+
+                    const instance = UI.PasswordStrength.init(password, options);
+                    levels[1].text = 'Changed';
+
+                    return instance.options.levels;
+                }, source)).toEqual([
+                    { score: 0, class: 'text-bg-danger', text: 'Bad' },
+                    { score: 50, class: 'text-bg-success', text: 'Good' },
+                ]);
+
+                const progressBar = page.locator('.progress-bar');
+                await expect(progressBar).toHaveText('Good');
+                await expect(progressBar).toHaveClass('progress-bar text-bg-success');
+
+                await page.locator('#password').fill('25');
+                await expect(progressBar).toHaveText('Bad');
+                await expect(progressBar).toHaveClass('progress-bar text-bg-danger');
+            });
+        }
+
+        test('prefers option arrays over data attribute arrays', async ({ page }) => {
+            expect(await page.evaluate((_) => {
+                const password = $.findOne('#password');
+                $.setDataset(password, {
+                    uiCommonPasswords: ['password', 'projectsecret'],
+                    uiLevels: [
+                        { score: 0, class: 'text-bg-danger', text: 'Bad' },
+                        { score: 50, class: 'text-bg-success', text: 'Good' },
+                    ],
+                });
+                $.setValue(password, 'password');
+
+                const instance = UI.PasswordStrength.init(password, {
+                    commonPasswords: [],
+                    levels: [{ score: 0, class: 'text-bg-primary' }],
+                });
+
+                return {
+                    commonPasswords: instance.options.commonPasswords,
+                    levels: instance.options.levels,
+                    score: instance.getStrength(),
+                };
+            })).toEqual({
+                commonPasswords: [],
+                levels: [{ score: 0, class: 'text-bg-primary' }],
+                score: 39,
+            });
+
+            await expect(page.locator('.progress-bar')).toHaveText('');
+            await expect(page.locator('.progress-bar'))
+                .toHaveClass('progress-bar text-bg-primary');
+        });
+
         test('renders the default level boundaries', async ({ page }) => {
             await page.evaluate((_) => {
                 const scores = [0, 20, 40, 60, 80, 100];

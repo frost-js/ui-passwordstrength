@@ -1,5 +1,5 @@
 import $ from '@fr0st/query';
-import { BaseComponent, generateId } from '@fr0st/ui';
+import { BaseComponent, generateId, getDataset } from '@fr0st/ui';
 import { getStrength as calculateStrength } from './helpers.js';
 
 /**
@@ -111,6 +111,16 @@ export default class PasswordStrength extends BaseComponent {
      */
     constructor(node, options) {
         super(node, options);
+
+        const overrides = { ...getDataset(node), ...options };
+
+        // Replace supplied arrays instead of merging them with default entries.
+        for (const key of ['levels', 'commonPasswords']) {
+            if (Array.isArray(overrides[key])) {
+                this.options[key].length = 0;
+                $._extend(this.options[key], overrides[key]);
+            }
+        }
 
         if (this.options.container) {
             this.#container = $.findOne(this.options.container);

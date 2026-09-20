@@ -1,4 +1,4 @@
-import { BaseComponent, generateId, initComponent } from "@fr0st/ui";
+import { BaseComponent, generateId, getDataset, initComponent } from "@fr0st/ui";
 import $ from "@fr0st/query";
 
 //#region src/helpers.js
@@ -303,6 +303,14 @@ var PasswordStrength = class extends BaseComponent {
 	*/
 	constructor(node, options) {
 		super(node, options);
+		const overrides = {
+			...getDataset(node),
+			...options
+		};
+		for (const key of ["levels", "commonPasswords"]) if (Array.isArray(overrides[key])) {
+			this.options[key].length = 0;
+			$._extend(this.options[key], overrides[key]);
+		}
 		if (this.options.container) this.#container = $.findOne(this.options.container);
 		else this.#container = $.closest(this.node, ":not(.form-input):not(.input-group)").shift();
 		this.#render();
