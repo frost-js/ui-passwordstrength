@@ -394,7 +394,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			});
 			_fr0st_query.default.addClass(this.#progressBar, nextLevel.class);
 			if (this.options.striped) _fr0st_query.default.addClass(this.#progressBar, this.constructor.classes.progressBarStriped);
-			if (nextLevel.text) _fr0st_query.default.setText(this.#progressBar, nextLevel.text);
+			_fr0st_query.default.setText(this.#progressBar, nextLevel.text ?? "");
 		}
 		/**
 		* Renders the password strength element.

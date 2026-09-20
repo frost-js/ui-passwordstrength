@@ -203,9 +203,7 @@ export default class PasswordStrength extends BaseComponent {
             $.addClass(this.#progressBar, this.constructor.classes.progressBarStriped);
         }
 
-        if (nextLevel.text) {
-            $.setText(this.#progressBar, nextLevel.text);
-        }
+        $.setText(this.#progressBar, nextLevel.text ?? '');
     }
 
     /**

@@ -362,7 +362,7 @@ var PasswordStrength = class extends BaseComponent {
 		});
 		$.addClass(this.#progressBar, nextLevel.class);
 		if (this.options.striped) $.addClass(this.#progressBar, this.constructor.classes.progressBarStriped);
-		if (nextLevel.text) $.setText(this.#progressBar, nextLevel.text);
+		$.setText(this.#progressBar, nextLevel.text ?? "");
 	}
 	/**
 	* Renders the password strength element.

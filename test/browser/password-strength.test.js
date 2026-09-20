@@ -487,6 +487,34 @@ test.describe('PasswordStrength', () => {
     });
 
     test.describe('levels option', () => {
+        test('clears previous text for empty and omitted labels', async ({ page }) => {
+            await page.evaluate((_) => {
+                const password = $.findOne('#password');
+                $.setValue(password, '100');
+                UI.PasswordStrength.init(password, {
+                    scorer: (value) => Number(value),
+                    levels: [
+                        { score: 0, class: 'text-bg-danger' },
+                        { score: 20, class: 'text-bg-warning', text: '' },
+                        { score: 80, class: 'text-bg-success', text: 'Very Strong' },
+                    ],
+                });
+            });
+
+            const password = page.locator('#password');
+            const progressBar = page.locator('.progress-bar');
+            await expect(progressBar).toHaveText('Very Strong');
+
+            for (const score of ['20', '0']) {
+                await password.fill(score);
+                await expect(progressBar).toHaveAttribute('aria-valuenow', score);
+                await expect(progressBar).toHaveText('');
+
+                await password.fill('100');
+                await expect(progressBar).toHaveText('Very Strong');
+            }
+        });
+
         for (const source of ['options', 'data attributes']) {
             test(`replaces level arrays from ${source}`, async ({ page }) => {
                 expect(await page.evaluate((source) => {
