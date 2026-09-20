@@ -340,6 +340,25 @@ test.describe('PasswordStrength', () => {
                 .toEqual([5, 5, 5, 5, 5]);
         });
 
+        test('recognizes combined boundary substitutions and decorations', async ({ page }) => {
+            expect(await page.evaluate((_) => [
+                ['@dministrator!', 'administrator'],
+                ['!@dministrator', 'administrator'],
+                ['!@dministrator!', 'administrator'],
+                ['@dministrator1', 'administrator'],
+                ['!@dministrator1!', 'administrator'],
+                ['@dministrator123!', 'administrator'],
+                ['123@dministrator!', 'administrator'],
+                ['$ecret!', 'secret'],
+                ['!acces$', 'access'],
+                ['!acces$!', 'access'],
+                ['!acces$123!', 'access'],
+            ].map(([password, commonPassword]) =>
+                UI.PasswordStrength.getStrength(password, [commonPassword]),
+            )))
+                .toEqual([5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]);
+        });
+
         test('works with a custom common-password list', async ({ page }) => {
             expect(await page.evaluate((_) => ({
                 defaultList: UI.PasswordStrength.getStrength('FrostJS'),

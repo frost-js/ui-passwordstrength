@@ -154,14 +154,19 @@ const normalizeLeet = (password) =>
  * @returns {Set<string>} The password variants.
  */
 const getPasswordVariants = (password) => {
-    const undecorated = password.replace(
-        /^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,
-        '',
-    );
-    const variants = [
-        undecorated,
-        undecorated.replace(/^\d+|\d+$/g, ''),
-    ];
+    // Preserve digits for decoration stripping while resolving symbol substitutions.
+    const substituted = password.replace(/[^\p{L}\p{N}]/gu, normalizeLeet);
+    const variants = [password, substituted].flatMap((value) => {
+        const undecorated = value.replace(
+            /^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,
+            '',
+        );
+
+        return [
+            undecorated,
+            undecorated.replace(/^\d+|\d+$/g, ''),
+        ];
+    });
 
     return new Set([
         normalizeLeet(password),

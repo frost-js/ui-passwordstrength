@@ -126,8 +126,10 @@ var normalizeLeet = (password) => Array.from(password, (character) => leetCharac
 * @returns {Set<string>} The password variants.
 */
 var getPasswordVariants = (password) => {
-	const undecorated = password.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
-	const variants = [undecorated, undecorated.replace(/^\d+|\d+$/g, "")];
+	const variants = [password, password.replace(/[^\p{L}\p{N}]/gu, normalizeLeet)].flatMap((value) => {
+		const undecorated = value.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+		return [undecorated, undecorated.replace(/^\d+|\d+$/g, "")];
+	});
 	return /* @__PURE__ */ new Set([
 		normalizeLeet(password),
 		...variants,
