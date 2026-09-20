@@ -14,11 +14,12 @@ Password-strength indicator for Frost UI with configurable thresholds, semantic 
 - Live scoring driven by the password input's native `input` event
 - Configurable ordered thresholds, labels, and Frost UI semantic color classes
 - Default or explicit progress-container placement
-- Optional UI v3 striped progress treatment
+- Optional UI v4 striped progress treatment
 - Existing-instance reuse with frozen resolved options
 - Accessible progress markup with reversible `aria-describedby` integration
 - Native `PasswordStrength` class and `passwordstrength` fQuery plugin
-- Public instance and static scoring methods
+- Public instance and static scoring methods with an optional custom scorer
+- Configurable common-password penalties with a small built-in list
 - Prebuilt ESM and UMD bundles with source maps
 - No component-specific CSS or Sass
 - JSDoc-powered IntelliSense
@@ -27,7 +28,7 @@ Password-strength indicator for Frost UI with configurable thresholds, semantic 
 
 ### Browser projects / bundlers
 
-Install PasswordStrength with its Frost UI and fQuery peers:
+Install PasswordStrength with its Frost UI 4 and fQuery 5 peers:
 
 ```bash
 npm i @fr0st/ui-passwordstrength @fr0st/ui @fr0st/query
@@ -139,9 +140,37 @@ Resolved `instance.options` are frozen.
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
+| `commonPasswords` | `string[]` | See below | Passwords the built-in scorer treats as very weak. Matching is case-insensitive and recognizes simple decorations and common leet substitutions. |
 | `container` | `string \| null` | `null` | CSS selector for the element that receives the generated progress markup. `null` uses the closest field container. |
 | `levels` | `PasswordStrengthLevel[]` | See below | Ordered score thresholds with a semantic class and optional label. |
+| `scorer` | `(password, commonPasswords) => number` | Built-in scorer | Calculate a score for the current password. Results are normalized and clamped between `0` and `100`. |
 | `striped` | `boolean` | `false` | Apply UI's `progress-bar-striped` class to the generated progress bar. |
+
+The default common-password list is intentionally small to keep the bundle lightweight. Extend it with application-specific terms:
+
+```js
+PasswordStrength.init(node, {
+    commonPasswords: [
+        ...PasswordStrength.defaults.commonPasswords,
+        'example-company',
+        'example-product',
+    ],
+});
+```
+
+Provide `scorer` to replace the built-in heuristic without adding a scoring dependency to the base bundle. The callback receives the current password and resolved `commonPasswords` option:
+
+```js
+PasswordStrength.init(node, {
+    scorer: (password, commonPasswords) => {
+        if (commonPasswords.includes(password.toLowerCase())) {
+            return 0;
+        }
+
+        return Math.min(password.length * 5, 100);
+    },
+});
+```
 
 Each level has a numeric `score`, a CSS `class`, and an optional `text` label. Defaults are ordered from lowest to highest threshold:
 
@@ -173,10 +202,11 @@ The first level should start at `0`, and levels should be sorted by ascending sc
 
 ## Data attributes
 
-All options can be supplied through `data-ui-*` attributes. Structured values such as `levels` use JSON:
+Serializable options can be supplied through `data-ui-*` attributes. Structured values such as `commonPasswords` and `levels` use JSON. The `scorer` callback must be supplied through JavaScript.
 
 | Attribute | Example |
 | --- | --- |
+| `data-ui-common-passwords` | `data-ui-common-passwords='["password","example-company"]'` |
 | `data-ui-container` | `data-ui-container="#password-strength-output"` |
 | `data-ui-levels` | `data-ui-levels='[{"score":0,"class":"text-bg-danger","text":"Risky"}]'` |
 | `data-ui-striped` | `data-ui-striped="true"` |
@@ -222,7 +252,7 @@ An instance also exposes its original input as `instance.node` and its frozen re
 
 ## Static API
 
-Use `PasswordStrength.getStrength(password)` to calculate a score without creating an instance or rendering progress markup:
+Use `PasswordStrength.getStrength(password, commonPasswords?)` to run the built-in scorer without creating an instance or rendering progress markup:
 
 ```js
 const score = PasswordStrength.getStrength('CorrectHorseBatteryStaple');
@@ -230,7 +260,9 @@ const score = PasswordStrength.getStrength('CorrectHorseBatteryStaple');
 console.log(score); // 100
 ```
 
-The score rewards length and mixed character types while penalizing repetition, consecutive characters, common `password` prefixes, and ascending letter or number sequences. It is a UI feedback heuristic, not an entropy estimate, breach check, or substitute for application security policy.
+The built-in scorer treats length as the primary strength factor. It heavily penalizes configured common passwords and simple variants, repeated characters and substrings, ascending and descending sequences, and keyboard-row patterns. Character variety provides only a small adjustment within each length band. Unicode is normalized and counted by code point.
+
+It is a lightweight UI feedback heuristic, not an entropy estimate, breach check, or substitute for application security policy.
 
 ## fQuery API
 

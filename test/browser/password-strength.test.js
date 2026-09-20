@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
 test.describe('PasswordStrength', () => {
     test.beforeEach(async ({ page }) => {
         await page.evaluate((_) => {
-            $.setHTML(
+            $.setHtml(
                 document.body,
                 '<div id="field"><div class="form-input"><input id="password" value="A1!"></div></div>' +
                     '<div id="target"></div>' +
@@ -63,13 +63,36 @@ test.describe('PasswordStrength', () => {
                 const password = $.findOne('#password');
                 const passwordStrength = UI.PasswordStrength.init(password);
                 return {
+                    commonPasswords: passwordStrength.options.commonPasswords,
                     container: passwordStrength.options.container,
                     frozen: Object.isFrozen(passwordStrength.options),
                     levels: passwordStrength.options.levels,
                     node: passwordStrength.node === password,
+                    scorer: passwordStrength.options.scorer ===
+                        UI.PasswordStrength.defaults.scorer,
                     striped: passwordStrength.options.striped,
                 };
             })).toEqual({
+                commonPasswords: [
+                    '123456',
+                    '12345678',
+                    '123456789',
+                    '1234567890',
+                    '000000',
+                    '111111',
+                    'abc123',
+                    'admin',
+                    'dragon',
+                    'iloveyou',
+                    'letmein',
+                    'monkey',
+                    'password',
+                    'password1',
+                    'password123',
+                    'qwerty',
+                    'qwerty123',
+                    'welcome',
+                ],
                 container: null,
                 frozen: true,
                 levels: [
@@ -80,6 +103,7 @@ test.describe('PasswordStrength', () => {
                     { class: 'text-bg-success', score: 80, text: 'Very Strong' },
                 ],
                 node: true,
+                scorer: true,
                 striped: false,
             });
         });
@@ -97,11 +121,11 @@ test.describe('PasswordStrength', () => {
             await expect(progressBar).toHaveClass('progress-bar text-bg-danger');
             await expect(progressBar).toHaveAttribute('aria-valuemax', '100');
             await expect(progressBar).toHaveAttribute('aria-valuemin', '0');
-            await expect(progressBar).toHaveAttribute('aria-valuenow', '32');
+            await expect(progressBar).toHaveAttribute('aria-valuenow', '14');
             await expect(progressBar).toHaveAttribute('id', /^password-strength/);
             await expect(progressBar).toHaveAttribute('role', 'progressbar');
-            await expect(progressBar).toHaveAttribute('style', 'width: 32%;');
-            await expect(progressBar).toHaveText('Weak');
+            await expect(progressBar).toHaveAttribute('style', 'width: 14%;');
+            await expect(progressBar).toHaveText('Very Weak');
 
             const progressId = await progressBar.getAttribute('id');
             await expect(password).toHaveAttribute('aria-describedby', progressId);
@@ -198,12 +222,12 @@ test.describe('PasswordStrength', () => {
             expect(await page.evaluate((_) => {
                 const passwordStrength = UI.PasswordStrength.init($.findOne('#password'));
                 return passwordStrength.getStrength();
-            })).toBe(32);
+            })).toBe(14);
         });
 
         test('gets the password strength (query)', async ({ page }) => {
             expect(await page.evaluate((_) =>
-                $('#password').passwordstrength('getStrength'))).toBe(32);
+                $('#password').passwordstrength('getStrength'))).toBe(14);
         });
     });
 
@@ -213,91 +237,100 @@ test.describe('PasswordStrength', () => {
                 '',
                 'password',
                 'password123',
+                'Password1!',
+                'p@ssw0rd1!',
                 'a',
-                'A',
-                '1',
-                '!',
+                '😀',
                 'aa',
                 'abab',
                 'A1!',
                 'aA1!',
                 'aBcD123!',
                 '😀Password1!',
+                'CorrectHorseBatteryStaple',
             ].map((password) => [
                 password,
                 UI.PasswordStrength.getStrength(password),
             ]))).toEqual([
                 ['', 0],
                 ['password', 0],
-                ['password123', 12],
-                ['a', 4],
-                ['A', 4],
-                ['1', 4],
-                ['!', 12],
-                ['aa', 1],
-                ['abab', 14],
-                ['A1!', 32],
-                ['aA1!', 42],
-                ['aBcD123!', 81],
-                ['😀Password1!', 100],
+                ['password123', 0],
+                ['Password1!', 5],
+                ['p@ssw0rd1!', 5],
+                ['a', 1],
+                ['😀', 1],
+                ['aa', 0],
+                ['abab', 6],
+                ['A1!', 14],
+                ['aA1!', 19],
+                ['aBcD123!', 32],
+                ['😀Password1!', 5],
+                ['CorrectHorseBatteryStaple', 100],
             ]);
         });
 
-        test('penalizes repeated and consecutive characters', async ({ page }) => {
+        test('penalizes repeated characters and patterns', async ({ page }) => {
             expect(await page.evaluate((_) => ({
-                consecutive: UI.PasswordStrength.getStrength('aaaa'),
+                consecutive: UI.PasswordStrength.getStrength('aaaaaa'),
+                longConsecutive: UI.PasswordStrength.getStrength(
+                    '11111111111111111111',
+                ),
                 repeated: UI.PasswordStrength.getStrength('abab'),
-                shortConsecutive: UI.PasswordStrength.getStrength('aa'),
+                repeatedPattern: UI.PasswordStrength.getStrength('abcabcabc'),
             }))).toEqual({
-                consecutive: 1,
-                repeated: 14,
-                shortConsecutive: 1,
+                consecutive: 0,
+                longConsecutive: 0,
+                repeated: 6,
+                repeatedPattern: 10,
             });
         });
 
-        test('penalizes sequential letters and numbers', async ({ page }) => {
+        test('penalizes sequences and keyboard patterns', async ({ page }) => {
             expect(await page.evaluate((_) => ({
                 letters: UI.PasswordStrength.getStrength('abcd'),
                 nonSequentialLetters: UI.PasswordStrength.getStrength('abxd'),
                 nonSequentialNumbers: UI.PasswordStrength.getStrength('1245'),
                 numbers: UI.PasswordStrength.getStrength('1234'),
+                reverseLetters: UI.PasswordStrength.getStrength('dcba'),
+                reverseNumbers: UI.PasswordStrength.getStrength('4321'),
+                row: UI.PasswordStrength.getStrength('asdfgh'),
+                unrelated: UI.PasswordStrength.getStrength('afkpuz'),
             }))).toEqual({
-                letters: 10,
-                nonSequentialLetters: 16,
-                nonSequentialNumbers: 22,
-                numbers: 16,
+                letters: 11,
+                nonSequentialLetters: 15,
+                nonSequentialNumbers: 15,
+                numbers: 11,
+                reverseLetters: 11,
+                reverseNumbers: 11,
+                row: 14,
+                unrelated: 20,
             });
         });
 
-        test('rewards mixed character classes', async ({ page }) => {
+        test('uses length as the primary strength factor', async ({ page }) => {
+            expect(await page.evaluate((_) => [
+                'gT7!',
+                'gT7!mQ2#',
+                'gT7!mQ2#vR4^',
+                'gT7!mQ2#vR4^xP9%',
+                'gT7!mQ2#vR4^xP9%kN6&',
+                'gT7!mQ2#vR4^xP9%kN6&cH8*',
+            ].map((password) => UI.PasswordStrength.getStrength(password))))
+                .toEqual([19, 39, 66, 86, 96, 100]);
+        });
+
+        test('works with a custom common-password list', async ({ page }) => {
             expect(await page.evaluate((_) => ({
-                basic: UI.PasswordStrength.getStrength('A1!'),
-                mixed: UI.PasswordStrength.getStrength('aBcD123!'),
-                repeatedMixed: UI.PasswordStrength.getStrength('Aa1!Aa1!'),
+                defaultList: UI.PasswordStrength.getStrength('FrostJS'),
+                emptyList: UI.PasswordStrength.getStrength('password', []),
+                customList: UI.PasswordStrength.getStrength(
+                    'FrostJS',
+                    ['frostjs'],
+                ),
             }))).toEqual({
-                basic: 32,
-                mixed: 81,
-                repeatedMixed: 83,
-            });
-        });
-
-        test('clamps scores to the supported range', async ({ page }) => {
-            expect(await page.evaluate((_) => {
-                const scores = [
-                    '',
-                    'CorrectHorseBatteryStaple',
-                    'Tr0ub4dor&3',
-                    '😀Password1!',
-                ].map((password) => UI.PasswordStrength.getStrength(password));
-                return {
-                    maximum: Math.max(...scores),
-                    minimum: Math.min(...scores),
-                    valid: scores.every((score) => score >= 0 && score <= 100),
-                };
-            })).toEqual({
-                maximum: 100,
-                minimum: 0,
-                valid: true,
+                defaultList: 32,
+                emptyList: 39,
+                customList: 0,
             });
         });
     });
@@ -311,15 +344,87 @@ test.describe('PasswordStrength', () => {
             const password = page.locator('#password');
             const progressBar = page.locator('.progress-bar');
 
-            await expect(progressBar).toHaveAttribute('aria-valuenow', '32');
-            await expect(progressBar).toHaveAttribute('style', 'width: 32%;');
-            await expect(progressBar).toHaveText('Weak');
+            await expect(progressBar).toHaveAttribute('aria-valuenow', '14');
+            await expect(progressBar).toHaveAttribute('style', 'width: 14%;');
+            await expect(progressBar).toHaveText('Very Weak');
 
             await password.fill('CorrectHorseBatteryStaple');
 
             await expect(progressBar).toHaveAttribute('aria-valuenow', '100');
             await expect(progressBar).toHaveAttribute('style', 'width: 100%;');
             await expect(progressBar).toHaveText('Very Strong');
+        });
+    });
+
+    test.describe('commonPasswords option', () => {
+        test('works with commonPasswords option', async ({ page }) => {
+            await page.evaluate((_) => {
+                const password = $.findOne('#password');
+                $.setValue(password, 'ProjectSecret');
+                UI.PasswordStrength.init(password, {
+                    commonPasswords: ['projectsecret'],
+                });
+            });
+
+            await expect(page.locator('.progress-bar'))
+                .toHaveAttribute('aria-valuenow', '0');
+        });
+
+        test('works with commonPasswords option (data-ui-common-passwords)', async ({ page }) => {
+            await page.evaluate((_) => {
+                const password = $.findOne('#password');
+                $.setValue(password, 'ProjectSecret');
+                $.setDataset(password, {
+                    uiCommonPasswords: ['projectsecret'],
+                });
+                UI.PasswordStrength.init(password);
+            });
+
+            await expect(page.locator('.progress-bar'))
+                .toHaveAttribute('aria-valuenow', '0');
+        });
+    });
+
+    test.describe('scorer option', () => {
+        test('works with scorer option', async ({ page }) => {
+            await page.evaluate((_) => {
+                const password = $.findOne('#password');
+                UI.PasswordStrength.init(password, {
+                    commonPasswords: [
+                        ...UI.PasswordStrength.defaults.commonPasswords,
+                        'projectsecret',
+                    ],
+                    scorer: (value, commonPasswords) => {
+                        window.passwordStrengthScorerArguments = {
+                            commonPassword: commonPasswords.at(-1),
+                            value,
+                        };
+                        return 55;
+                    },
+                });
+            });
+
+            expect(await page.evaluate((_) =>
+                window.passwordStrengthScorerArguments)).toEqual({
+                commonPassword: 'projectsecret',
+                value: 'A1!',
+            });
+
+            const progressBar = page.locator('.progress-bar');
+            await expect(progressBar).toHaveAttribute('aria-valuenow', '55');
+            await expect(progressBar).toHaveAttribute('style', 'width: 55%;');
+            await expect(progressBar).toHaveText('Normal');
+        });
+
+        test('normalizes invalid scorer results', async ({ page }) => {
+            await page.evaluate((_) => {
+                UI.PasswordStrength.init($.findOne('#password'), {
+                    scorer: (_) => Number.NaN,
+                });
+            });
+
+            await expect(page.locator('.progress-bar'))
+                .toHaveAttribute('aria-valuenow', '0');
         });
     });
 
@@ -357,20 +462,15 @@ test.describe('PasswordStrength', () => {
     test.describe('levels option', () => {
         test('renders the default level boundaries', async ({ page }) => {
             await page.evaluate((_) => {
-                const levels = [
-                    '',
-                    'aaaaaaAaA',
-                    'aaaaaaAA!',
-                    'aaaaaA1!a',
-                    'aaaa1!1!A',
-                    'aaA1!1!1!',
-                ];
-                levels.forEach((value) => {
+                const scores = [0, 20, 40, 60, 80, 100];
+                scores.forEach((score) => {
                     const container = $.create('div');
-                    const password = $.create('input', { value });
+                    const password = $.create('input', { value: `${score}` });
                     $.append(container, password);
                     $.append(document.body, container);
-                    UI.PasswordStrength.init(password);
+                    UI.PasswordStrength.init(password, {
+                        scorer: (value) => Number.parseInt(value, 10),
+                    });
                 });
             });
 

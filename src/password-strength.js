@@ -10,9 +10,18 @@ import { getStrength as calculateStrength } from './helpers.js';
  */
 
 /**
+ * @callback PasswordStrengthScorer
+ * @param {string} password The password.
+ * @param {string[]} commonPasswords The common passwords.
+ * @returns {number} The password strength, from 0 to 100.
+ */
+
+/**
  * @typedef {object} PasswordStrengthOptions
+ * @property {string[]} [commonPasswords] Passwords to score as very weak.
  * @property {string|null} [container=null] The selector for the progress container.
  * @property {PasswordStrengthLevel[]} [levels] The ordered password-strength levels.
+ * @property {PasswordStrengthScorer} [scorer] Calculates the password strength.
  * @property {boolean} [striped=false] Whether to display a striped progress bar.
  */
 
@@ -28,6 +37,26 @@ export default class PasswordStrength extends BaseComponent {
     };
     /** @type {PasswordStrengthOptions} */
     static defaults = {
+        commonPasswords: [
+            '123456',
+            '12345678',
+            '123456789',
+            '1234567890',
+            '000000',
+            '111111',
+            'abc123',
+            'admin',
+            'dragon',
+            'iloveyou',
+            'letmein',
+            'monkey',
+            'password',
+            'password1',
+            'password123',
+            'qwerty',
+            'qwerty123',
+            'welcome',
+        ],
         levels: [
             {
                 score: 0,
@@ -56,6 +85,7 @@ export default class PasswordStrength extends BaseComponent {
             },
         ],
         container: null,
+        scorer: calculateStrength,
         striped: false,
     };
 
@@ -67,10 +97,11 @@ export default class PasswordStrength extends BaseComponent {
     /**
      * Calculates the strength of a password.
      * @param {string} password The password.
+     * @param {string[]} [commonPasswords=this.defaults.commonPasswords] Passwords to score as very weak.
      * @returns {number} The password strength, from 0 to 100.
      */
-    static getStrength(password) {
-        return calculateStrength(password);
+    static getStrength(password, commonPasswords = this.defaults.commonPasswords) {
+        return calculateStrength(password, commonPasswords);
     }
 
     /**
@@ -116,8 +147,14 @@ export default class PasswordStrength extends BaseComponent {
      */
     getStrength() {
         const value = $.getValue(this.node);
+        const strength = Number(this.options.scorer(
+            value,
+            this.options.commonPasswords,
+        ));
 
-        return this.constructor.getStrength(value);
+        return Number.isFinite(strength) ?
+            $._clamp(strength, 0, 100) :
+            0;
     }
 
     /**
