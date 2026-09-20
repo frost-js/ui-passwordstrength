@@ -1,7 +1,7 @@
 import { BaseComponent, generateId, getDataset, initComponent } from "@fr0st/ui";
 import $ from "@fr0st/query";
 
-//#region src/helpers.js
+//#region src/strength.js
 var characterTypes = [
 	{
 		pattern: /\p{Ll}/u,

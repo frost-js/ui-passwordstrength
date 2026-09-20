@@ -33,7 +33,7 @@ Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 //#endregion
 _fr0st_query = __toESM(_fr0st_query, 1);
 
-//#region src/helpers.js
+//#region src/strength.js
 	var characterTypes = [
 		{
 			pattern: /\p{Ll}/u,

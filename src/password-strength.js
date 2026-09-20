@@ -1,6 +1,6 @@
 import $ from '@fr0st/query';
 import { BaseComponent, generateId, getDataset } from '@fr0st/ui';
-import { getStrength as calculateStrength } from './helpers.js';
+import { getStrength } from './strength.js';
 
 /**
  * @typedef {object} PasswordStrengthLevel
@@ -85,7 +85,7 @@ export default class PasswordStrength extends BaseComponent {
             },
         ],
         container: null,
-        scorer: calculateStrength,
+        scorer: getStrength,
         striped: false,
     };
 
@@ -103,7 +103,7 @@ export default class PasswordStrength extends BaseComponent {
      * @returns {number} The password strength, from 0 to 100.
      */
     static getStrength(password, commonPasswords = this.defaults.commonPasswords) {
-        return calculateStrength(password, commonPasswords);
+        return getStrength(password, commonPasswords);
     }
 
     /**
