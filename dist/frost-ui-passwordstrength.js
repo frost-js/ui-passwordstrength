@@ -328,26 +328,33 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		*/
 		constructor(node, options) {
 			super(node, options);
-			const overrides = {
-				...(0, _fr0st_ui.getDataset)(node),
-				...options
-			};
-			for (const key of ["levels", "commonPasswords"]) if (Array.isArray(overrides[key])) {
-				this.options[key].length = 0;
-				_fr0st_query.default._extend(this.options[key], overrides[key]);
+			try {
+				this.#describedBy = _fr0st_query.default.getAttribute(this.node, "aria-describedby");
+				const overrides = {
+					...(0, _fr0st_ui.getDataset)(node),
+					...options
+				};
+				for (const key of ["levels", "commonPasswords"]) if (Array.isArray(overrides[key])) {
+					this.options[key].length = 0;
+					_fr0st_query.default._extend(this.options[key], overrides[key]);
+				}
+				this.#form = this.node.form;
+				if (this.options.container) this.#container = _fr0st_query.default.findOne(this.options.container);
+				else this.#container = _fr0st_query.default.closest(this.node, ":not(.form-input):not(.input-group)").shift();
+				this.#render();
+				this.#refresh();
+				this.#events();
+			} catch (error) {
+				this.dispose();
+				throw error;
 			}
-			this.#form = this.node.form;
-			if (this.options.container) this.#container = _fr0st_query.default.findOne(this.options.container);
-			else this.#container = _fr0st_query.default.closest(this.node, ":not(.form-input):not(.input-group)").shift();
-			this.#render();
-			this.#refresh();
-			this.#events();
 		}
 		/** @inheritdoc */
 		dispose() {
+			if (!this.node) return;
 			_fr0st_query.default.remove(this.#progress);
 			_fr0st_query.default.removeEvent(this.node, "input.ui.passwordstrength");
-			if (this.#form) _fr0st_query.default.removeEvent(this.#form, "reset.ui.passwordstrength", this.#resetHandler);
+			if (this.#form && this.#resetHandler) _fr0st_query.default.removeEvent(this.#form, "reset.ui.passwordstrength", this.#resetHandler);
 			if (this.#describedBy === null) _fr0st_query.default.removeAttribute(this.node, "aria-describedby");
 			else _fr0st_query.default.setAttribute(this.node, { "aria-describedby": this.#describedBy });
 			this.#container = null;
@@ -401,7 +408,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* Renders the password strength element.
 		*/
 		#render() {
-			this.#describedBy = _fr0st_query.default.getAttribute(this.node, "aria-describedby");
 			this.#progress = _fr0st_query.default.create("div", { class: this.constructor.classes.progress });
 			const id = (0, _fr0st_ui.generateId)("password-strength");
 			this.#progressBar = _fr0st_query.default.create("div", { attributes: {

@@ -296,26 +296,33 @@ var PasswordStrength = class extends BaseComponent {
 	*/
 	constructor(node, options) {
 		super(node, options);
-		const overrides = {
-			...getDataset(node),
-			...options
-		};
-		for (const key of ["levels", "commonPasswords"]) if (Array.isArray(overrides[key])) {
-			this.options[key].length = 0;
-			$._extend(this.options[key], overrides[key]);
+		try {
+			this.#describedBy = $.getAttribute(this.node, "aria-describedby");
+			const overrides = {
+				...getDataset(node),
+				...options
+			};
+			for (const key of ["levels", "commonPasswords"]) if (Array.isArray(overrides[key])) {
+				this.options[key].length = 0;
+				$._extend(this.options[key], overrides[key]);
+			}
+			this.#form = this.node.form;
+			if (this.options.container) this.#container = $.findOne(this.options.container);
+			else this.#container = $.closest(this.node, ":not(.form-input):not(.input-group)").shift();
+			this.#render();
+			this.#refresh();
+			this.#events();
+		} catch (error) {
+			this.dispose();
+			throw error;
 		}
-		this.#form = this.node.form;
-		if (this.options.container) this.#container = $.findOne(this.options.container);
-		else this.#container = $.closest(this.node, ":not(.form-input):not(.input-group)").shift();
-		this.#render();
-		this.#refresh();
-		this.#events();
 	}
 	/** @inheritdoc */
 	dispose() {
+		if (!this.node) return;
 		$.remove(this.#progress);
 		$.removeEvent(this.node, "input.ui.passwordstrength");
-		if (this.#form) $.removeEvent(this.#form, "reset.ui.passwordstrength", this.#resetHandler);
+		if (this.#form && this.#resetHandler) $.removeEvent(this.#form, "reset.ui.passwordstrength", this.#resetHandler);
 		if (this.#describedBy === null) $.removeAttribute(this.node, "aria-describedby");
 		else $.setAttribute(this.node, { "aria-describedby": this.#describedBy });
 		this.#container = null;
@@ -369,7 +376,6 @@ var PasswordStrength = class extends BaseComponent {
 	* Renders the password strength element.
 	*/
 	#render() {
-		this.#describedBy = $.getAttribute(this.node, "aria-describedby");
 		this.#progress = $.create("div", { class: this.constructor.classes.progress });
 		const id = generateId("password-strength");
 		this.#progressBar = $.create("div", { attributes: {

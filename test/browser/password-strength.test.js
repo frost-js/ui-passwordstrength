@@ -135,9 +135,80 @@ test.describe('PasswordStrength', () => {
             await expect(page.locator('#password'))
                 .toHaveAttribute('aria-describedby', `hint error ${progressId}`);
         });
+
+        test.describe('failed initialization', () => {
+            test.beforeEach(async ({ page }) => {
+                await page.evaluate((_) => {
+                    document.body.innerHTML =
+                        '<form id="lifecycle-form"><label for="lifecycle-input">Label</label>' +
+                        '<input id="lifecycle-input" tabindex="7" aria-hidden="false" aria-describedby="hint" type="text"></form>';
+                    window.resetCalls = 0;
+                    $.addEvent('#lifecycle-form', 'reset.ui.passwordstrength', (_) => window.resetCalls++);
+                });
+            });
+
+            test('rolls back an invalid container selector', async ({ page }) => {
+                await expect(page.evaluate((_) =>
+                    UI.PasswordStrength.init($.findOne('#lifecycle-input'), { container: '[' }),
+                )).rejects.toThrow();
+
+                expect(await page.evaluate((_) => $.hasData('#lifecycle-input', 'passwordstrength'))).toBe(false);
+                await expect(page.locator('#lifecycle-input')).not.toHaveClass(/\bvisually-hidden\b/);
+                await expect(page.locator('#lifecycle-input')).toHaveAttribute('tabindex', '7');
+                await expect(page.locator('#lifecycle-input')).toHaveAttribute('aria-hidden', 'false');
+                await expect(page.locator('#lifecycle-input')).toHaveAttribute('aria-describedby', 'hint');
+                await expect(page.locator('#lifecycle-form > label')).not.toHaveAttribute('id');
+                await expect(page.locator('#lifecycle-form > *')).toHaveCount(2);
+
+                await page.evaluate((_) => $.triggerEvent('#lifecycle-form', 'reset.ui.passwordstrength'));
+                expect(await page.evaluate((_) => window.resetCalls)).toBe(1);
+
+                expect(await page.evaluate((_) => {
+                    const node = $.findOne('#lifecycle-input');
+                    const instance = UI.PasswordStrength.init(node);
+                    return $.getData(node, 'passwordstrength') === instance;
+                })).toBe(true);
+            });
+
+            test('rolls back a scorer failure', async ({ page }) => {
+                await expect(page.evaluate((_) =>
+                    UI.PasswordStrength.init($.findOne('#lifecycle-input'), { scorer: (_) => {
+                        throw new Error('Scorer failed');
+                    } }),
+                )).rejects.toThrow();
+
+                expect(await page.evaluate((_) => $.hasData('#lifecycle-input', 'passwordstrength'))).toBe(false);
+                await expect(page.locator('#lifecycle-input')).not.toHaveClass(/\bvisually-hidden\b/);
+                await expect(page.locator('#lifecycle-input')).toHaveAttribute('tabindex', '7');
+                await expect(page.locator('#lifecycle-input')).toHaveAttribute('aria-hidden', 'false');
+                await expect(page.locator('#lifecycle-input')).toHaveAttribute('aria-describedby', 'hint');
+                await expect(page.locator('#lifecycle-form > label')).not.toHaveAttribute('id');
+                await expect(page.locator('#lifecycle-form > *')).toHaveCount(2);
+
+                await page.evaluate((_) => $.triggerEvent('#lifecycle-form', 'reset.ui.passwordstrength'));
+                expect(await page.evaluate((_) => window.resetCalls)).toBe(1);
+
+                expect(await page.evaluate((_) => {
+                    const node = $.findOne('#lifecycle-input');
+                    const instance = UI.PasswordStrength.init(node);
+                    return $.getData(node, 'passwordstrength') === instance;
+                })).toBe(true);
+            });
+        });
     });
 
     test.describe('#dispose', () => {
+        test('ignores repeated disposal after reinitialization', async ({ page }) => {
+            expect(await page.evaluate((_) => {
+                const node = $.findOne('#password');
+                const first = UI.PasswordStrength.init(node);
+                first.dispose();
+                first.dispose();
+                const second = UI.PasswordStrength.init(node);
+                first.dispose();
+                return $.getData(node, 'passwordstrength') === second;
+            })).toBe(true);
+        });
         for (const { name, dispose } of [
             { name: 'class', dispose: (instance) => instance.dispose() },
             { name: 'QuerySet', dispose: () => $('#password').passwordstrength('dispose') },
