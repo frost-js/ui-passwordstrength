@@ -1,5 +1,6 @@
-const $ = globalThis.$;
+const $ = globalThis.fQuery;
 const { PasswordStrength } = globalThis.UI;
+const themeKey = 'frostui-passwordstrength-demo-theme';
 
 const setTheme = (theme) => {
     if (theme === 'system') {
@@ -11,10 +12,34 @@ const setTheme = (theme) => {
     $('[data-demo-theme]').setValue(theme);
 };
 
-const storedTheme = localStorage.getItem('frostui-passwordstrength-demo-theme');
-setTheme(['light', 'dark'].includes(storedTheme) ? storedTheme : 'system');
-
 $.ready(() => {
+    let storedTheme;
+
+    try {
+        storedTheme = localStorage.getItem(themeKey);
+    } catch {
+        // The demo remains usable when browser storage is unavailable.
+    }
+
+    const requestedTheme = new URLSearchParams(location.search).get('theme');
+    const initialTheme = requestedTheme || storedTheme;
+    setTheme(['light', 'dark'].includes(initialTheme) ? initialTheme : 'system');
+
+    $('[data-demo-theme]').addEvent('change', (event) => {
+        const theme = $.getValue(event.currentTarget);
+        setTheme(theme);
+
+        try {
+            if (theme === 'system') {
+                localStorage.removeItem(themeKey);
+            } else {
+                localStorage.setItem(themeKey, theme);
+            }
+        } catch {
+            // Theme selection still applies for the current page.
+        }
+    });
+
     const customLevels = [
         {
             class: 'text-bg-danger',
@@ -46,18 +71,6 @@ $.ready(() => {
     $('[data-ui-toggle="passwordstrength"]').passwordstrength();
     $('#custom-levels-password').passwordstrength({ levels: customLevels });
     $('#methods-password').passwordstrength();
-
-    $('[data-demo-theme]').addEvent('change', (event) => {
-        const theme = $.getValue(event.currentTarget);
-
-        if (theme === 'system') {
-            localStorage.removeItem('frostui-passwordstrength-demo-theme');
-        } else {
-            localStorage.setItem('frostui-passwordstrength-demo-theme', theme);
-        }
-
-        setTheme(theme);
-    });
 
     $('[data-demo-method]').addEvent('click', (event) => {
         const method = $.getDataset(event.currentTarget, 'demoMethod');
@@ -93,6 +106,4 @@ $.ready(() => {
 
     $.addEvent('#static-password', 'input', updateStaticScore);
     updateStaticScore();
-
-    setTheme(document.documentElement.dataset.uiTheme || 'system');
 });
