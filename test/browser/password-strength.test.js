@@ -2,20 +2,21 @@ import { expect, test } from '#test';
 
 test.describe('PasswordStrength', () => {
     test.beforeEach(async ({ page }) => {
-        await page.evaluate((_) => {
-            document.body.innerHTML =
+        await page.evaluate(() => {
+            $.setHtml(document.body,
                 '<div id="field"><div class="form-input"><input id="password" value="A1!"></div></div>' +
                 '<div id="target"></div>' +
-                '<div id="field2"><input id="password2"></div>';
+                '<div id="field2"><input id="password2"></div>',
+            );
         });
     });
 
     test.describe('#init', () => {
         for (const { name, init } of [
-            { name: 'class', init: () => UI.PasswordStrength.init(document.querySelector('#password')) },
+            { name: 'class', init: () => UI.PasswordStrength.init($.findOne('#password')) },
             { name: 'QuerySet', init: () => $('#password').passwordstrength() },
         ]) {
-            test(`creates a PasswordStrength (${name})`, async ({ page }) => {
+            test(`creates and registers a PasswordStrength (${name})`, async ({ page }) => {
                 const instance = await page.evaluateHandle(init);
                 expect(await instance.evaluate((value) => value instanceof UI.PasswordStrength)).toBe(true);
                 expect(await instance.evaluate((value) => $.getData('#password', 'passwordstrength') === value)).toBe(true);
@@ -24,7 +25,7 @@ test.describe('PasswordStrength', () => {
         }
 
         test('creates multiple PasswordStrengths (QuerySet)', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            expect(await page.evaluate(() => {
                 $('input').passwordstrength();
                 return ['#password', '#password2'].every((selector) =>
                     $.getData(selector, 'passwordstrength') instanceof UI.PasswordStrength,
@@ -33,15 +34,15 @@ test.describe('PasswordStrength', () => {
         });
 
         test('returns the first PasswordStrength (QuerySet)', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            expect(await page.evaluate(() => {
                 const passwordStrength = $('input').passwordstrength();
                 return passwordStrength === $.getData('#password', 'passwordstrength');
             })).toBe(true);
         });
 
         test('reuses an existing PasswordStrength', async ({ page }) => {
-            expect(await page.evaluate((_) => {
-                const password = document.querySelector('#password');
+            expect(await page.evaluate(() => {
+                const password = $.findOne('#password');
                 const first = UI.PasswordStrength.init(password, { striped: true });
                 const second = UI.PasswordStrength.init(password, { striped: false });
                 return first === second;
@@ -52,8 +53,8 @@ test.describe('PasswordStrength', () => {
         });
 
         test('exposes frozen default options', async ({ page }) => {
-            expect(await page.evaluate((_) => {
-                const password = document.querySelector('#password');
+            expect(await page.evaluate(() => {
+                const password = $.findOne('#password');
                 const passwordStrength = UI.PasswordStrength.init(password);
                 return {
                     commonPasswords: passwordStrength.options.commonPasswords,
@@ -102,8 +103,8 @@ test.describe('PasswordStrength', () => {
         });
 
         test('renders the initial strength', async ({ page }) => {
-            await page.evaluate((_) => {
-                UI.PasswordStrength.init(document.querySelector('#password'));
+            await page.evaluate(() => {
+                UI.PasswordStrength.init($.findOne('#password'));
             });
 
             const password = page.locator('#password');
@@ -125,8 +126,8 @@ test.describe('PasswordStrength', () => {
         });
 
         test('appends the generated ID to aria-describedby', async ({ page }) => {
-            await page.evaluate((_) => {
-                const password = document.querySelector('#password');
+            await page.evaluate(() => {
+                const password = $.findOne('#password');
                 $.setAttribute(password, { 'aria-describedby': 'hint error' });
                 UI.PasswordStrength.init(password);
             });
@@ -138,21 +139,22 @@ test.describe('PasswordStrength', () => {
 
         test.describe('failed initialization', () => {
             test.beforeEach(async ({ page }) => {
-                await page.evaluate((_) => {
-                    document.body.innerHTML =
+                await page.evaluate(() => {
+                    $.setHtml(document.body,
                         '<form id="lifecycle-form"><label for="lifecycle-input">Label</label>' +
-                        '<input id="lifecycle-input" tabindex="7" aria-hidden="false" aria-describedby="hint" type="text"></form>';
+                        '<input id="lifecycle-input" tabindex="7" aria-hidden="false" aria-describedby="hint" type="text"></form>',
+                    );
                     window.resetCalls = 0;
-                    $.addEvent('#lifecycle-form', 'reset.ui.passwordstrength', (_) => window.resetCalls++);
+                    $.addEvent('#lifecycle-form', 'reset.ui.passwordstrength', () => window.resetCalls++);
                 });
             });
 
             test('rolls back an invalid container selector', async ({ page }) => {
-                await expect(page.evaluate((_) =>
+                await expect(page.evaluate(() =>
                     UI.PasswordStrength.init($.findOne('#lifecycle-input'), { container: '[' }),
                 )).rejects.toThrow();
 
-                expect(await page.evaluate((_) => $.hasData('#lifecycle-input', 'passwordstrength'))).toBe(false);
+                expect(await page.evaluate(() => $.hasData('#lifecycle-input', 'passwordstrength'))).toBe(false);
                 await expect(page.locator('#lifecycle-input')).not.toHaveClass(/\bvisually-hidden\b/);
                 await expect(page.locator('#lifecycle-input')).toHaveAttribute('tabindex', '7');
                 await expect(page.locator('#lifecycle-input')).toHaveAttribute('aria-hidden', 'false');
@@ -160,10 +162,10 @@ test.describe('PasswordStrength', () => {
                 await expect(page.locator('#lifecycle-form > label')).not.toHaveAttribute('id');
                 await expect(page.locator('#lifecycle-form > *')).toHaveCount(2);
 
-                await page.evaluate((_) => $.triggerEvent('#lifecycle-form', 'reset.ui.passwordstrength'));
-                expect(await page.evaluate((_) => window.resetCalls)).toBe(1);
+                await page.evaluate(() => $.triggerEvent('#lifecycle-form', 'reset.ui.passwordstrength'));
+                expect(await page.evaluate(() => window.resetCalls)).toBe(1);
 
-                expect(await page.evaluate((_) => {
+                expect(await page.evaluate(() => {
                     const node = $.findOne('#lifecycle-input');
                     const instance = UI.PasswordStrength.init(node);
                     return $.getData(node, 'passwordstrength') === instance;
@@ -171,13 +173,13 @@ test.describe('PasswordStrength', () => {
             });
 
             test('rolls back a scorer failure', async ({ page }) => {
-                await expect(page.evaluate((_) =>
-                    UI.PasswordStrength.init($.findOne('#lifecycle-input'), { scorer: (_) => {
+                await expect(page.evaluate(() =>
+                    UI.PasswordStrength.init($.findOne('#lifecycle-input'), { scorer: () => {
                         throw new Error('Scorer failed');
                     } }),
                 )).rejects.toThrow();
 
-                expect(await page.evaluate((_) => $.hasData('#lifecycle-input', 'passwordstrength'))).toBe(false);
+                expect(await page.evaluate(() => $.hasData('#lifecycle-input', 'passwordstrength'))).toBe(false);
                 await expect(page.locator('#lifecycle-input')).not.toHaveClass(/\bvisually-hidden\b/);
                 await expect(page.locator('#lifecycle-input')).toHaveAttribute('tabindex', '7');
                 await expect(page.locator('#lifecycle-input')).toHaveAttribute('aria-hidden', 'false');
@@ -185,10 +187,10 @@ test.describe('PasswordStrength', () => {
                 await expect(page.locator('#lifecycle-form > label')).not.toHaveAttribute('id');
                 await expect(page.locator('#lifecycle-form > *')).toHaveCount(2);
 
-                await page.evaluate((_) => $.triggerEvent('#lifecycle-form', 'reset.ui.passwordstrength'));
-                expect(await page.evaluate((_) => window.resetCalls)).toBe(1);
+                await page.evaluate(() => $.triggerEvent('#lifecycle-form', 'reset.ui.passwordstrength'));
+                expect(await page.evaluate(() => window.resetCalls)).toBe(1);
 
-                expect(await page.evaluate((_) => {
+                expect(await page.evaluate(() => {
                     const node = $.findOne('#lifecycle-input');
                     const instance = UI.PasswordStrength.init(node);
                     return $.getData(node, 'passwordstrength') === instance;
@@ -199,7 +201,7 @@ test.describe('PasswordStrength', () => {
 
     test.describe('#dispose', () => {
         test('ignores repeated disposal after reinitialization', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            expect(await page.evaluate(() => {
                 const node = $.findOne('#password');
                 const first = UI.PasswordStrength.init(node);
                 first.dispose();
@@ -215,7 +217,7 @@ test.describe('PasswordStrength', () => {
         ]) {
             test(`removes the PasswordStrength and generated markup (${name})`, async ({ page }) => {
                 const instance = await page.evaluateHandle(() =>
-                    UI.PasswordStrength.init(document.querySelector('#password')));
+                    UI.PasswordStrength.init($.findOne('#password')));
                 await page.evaluate(dispose, instance);
 
                 expect(await instance.evaluate((value) => ({
@@ -235,9 +237,9 @@ test.describe('PasswordStrength', () => {
         ]) {
             test(`restores ${name} aria-describedby state`, async ({ page }) => {
                 await page.evaluate((describedBy) => {
-                    const password = document.querySelector('#password');
+                    const password = $.findOne('#password');
                     if (describedBy !== null) {
-                        password.setAttribute('aria-describedby', describedBy);
+                        $.setAttribute(password, 'aria-describedby', describedBy);
                     }
                     UI.PasswordStrength.init(password).dispose();
                 }, describedBy);
@@ -252,11 +254,11 @@ test.describe('PasswordStrength', () => {
         }
 
         test('removes the input event handler', async ({ page }) => {
-            expect(await page.evaluate((_) => {
-                const password = document.querySelector('#password');
+            expect(await page.evaluate(() => {
+                const password = $.findOne('#password');
                 const passwordStrength = UI.PasswordStrength.init(password);
                 let calls = 0;
-                passwordStrength.getStrength = (_) => {
+                passwordStrength.getStrength = () => {
                     calls++;
                     return 100;
                 };
@@ -269,7 +271,7 @@ test.describe('PasswordStrength', () => {
 
     test.describe('#getStrength', () => {
         for (const { name, getStrength } of [
-            { name: 'class', getStrength: () => UI.PasswordStrength.init(document.querySelector('#password')).getStrength() },
+            { name: 'class', getStrength: () => UI.PasswordStrength.init($.findOne('#password')).getStrength() },
             { name: 'QuerySet', getStrength: () => $('#password').passwordstrength('getStrength') },
         ]) {
             test(`gets the password strength (${name})`, async ({ page }) => {
@@ -280,8 +282,8 @@ test.describe('PasswordStrength', () => {
 
     test.describe('events', () => {
         test('refreshes when the password changes', async ({ page }) => {
-            await page.evaluate((_) => {
-                UI.PasswordStrength.init(document.querySelector('#password'));
+            await page.evaluate(() => {
+                UI.PasswordStrength.init($.findOne('#password'));
             });
 
             const password = page.locator('#password');
@@ -301,8 +303,8 @@ test.describe('PasswordStrength', () => {
 
     test.describe('option resolution', () => {
         test('prefers option arrays over data attribute arrays', async ({ page }) => {
-            expect(await page.evaluate((_) => {
-                const password = document.querySelector('#password');
+            expect(await page.evaluate(() => {
+                const password = $.findOne('#password');
                 $.setDataset(password, {
                     uiCommonPasswords: ['password', 'projectsecret'],
                     uiLevels: [
@@ -342,10 +344,10 @@ test.describe('PasswordStrength', () => {
             ]) {
                 test(`replaces defaults with a ${name} list (${source})`, async ({ page }) => {
                     expect(await page.evaluate(({ source, commonPasswords }) => {
-                        const password = document.querySelector('#password');
-                        password.value = 'password';
+                        const password = $.findOne('#password');
+                        $.setValue(password, 'password');
                         if (source === 'data attributes') {
-                            password.dataset.uiCommonPasswords = JSON.stringify(commonPasswords);
+                            $.setDataset(password, 'uiCommonPasswords', commonPasswords);
                         }
                         const instance = UI.PasswordStrength.init(
                             password,
@@ -366,10 +368,10 @@ test.describe('PasswordStrength', () => {
         ]) {
             test(`recognizes a custom common password (${name})`, async ({ page }) => {
                 await page.evaluate(({ options, attributes }) => {
-                    const password = document.querySelector('#password');
-                    password.value = 'ProjectSecret';
+                    const password = $.findOne('#password');
+                    $.setValue(password, 'ProjectSecret');
                     for (const [name, value] of Object.entries(attributes)) {
-                        password.setAttribute(name, value);
+                        $.setAttribute(password, name, value);
                     }
                     UI.PasswordStrength.init(password, options);
                 }, { options, attributes });
@@ -387,9 +389,9 @@ test.describe('PasswordStrength', () => {
         ]) {
             test(`uses the ${name} container`, async ({ page }) => {
                 await page.evaluate(({ options, attributes }) => {
-                    const password = document.querySelector('#password');
+                    const password = $.findOne('#password');
                     for (const [name, value] of Object.entries(attributes)) {
-                        password.setAttribute(name, value);
+                        $.setAttribute(password, name, value);
                     }
                     UI.PasswordStrength.init(password, options);
                 }, { options, attributes });
@@ -414,8 +416,8 @@ test.describe('PasswordStrength', () => {
         ]) {
             test(`renders the default level for score ${score}`, async ({ page }) => {
                 await page.evaluate((score) => {
-                    const password = document.querySelector('#password');
-                    password.value = `${score}`;
+                    const password = $.findOne('#password');
+                    $.setValue(password, `${score}`);
                     UI.PasswordStrength.init(password, { scorer: (value) => Number(value) });
                 }, score);
 
@@ -432,11 +434,11 @@ test.describe('PasswordStrength', () => {
             for (const text of ['', 'Custom']) {
                 test(`renders a ${text ? 'custom' : 'blank'} level label (${source})`, async ({ page }) => {
                     await page.evaluate(({ source, text }) => {
-                        const password = document.querySelector('#password');
-                        password.value = '';
+                        const password = $.findOne('#password');
+                        $.setValue(password, '');
                         const levels = [{ class: 'text-bg-primary', score: 0, text }];
                         if (source === 'data attributes') {
-                            password.dataset.uiLevels = JSON.stringify(levels);
+                            $.setDataset(password, 'uiLevels', levels);
                         }
                         UI.PasswordStrength.init(password, source === 'options' ? { levels } : undefined);
                     }, { source, text });
@@ -451,7 +453,7 @@ test.describe('PasswordStrength', () => {
         for (const source of ['options', 'data attributes']) {
             test(`replaces level arrays from ${source}`, async ({ page }) => {
                 expect(await page.evaluate((source) => {
-                    const password = document.querySelector('#password');
+                    const password = $.findOne('#password');
                     const levels = [
                         { score: 0, class: 'text-bg-danger', text: 'Bad' },
                         { score: 50, class: 'text-bg-success', text: 'Good' },
@@ -489,8 +491,8 @@ test.describe('PasswordStrength', () => {
             { name: 'omitted', score: '0' },
         ]) {
             test(`clears previous text for an ${name} label`, async ({ page }) => {
-                await page.evaluate((_) => {
-                    const password = document.querySelector('#password');
+                await page.evaluate(() => {
+                    const password = $.findOne('#password');
                     $.setValue(password, '100');
                     UI.PasswordStrength.init(password, {
                         scorer: (value) => Number(value),
@@ -518,8 +520,8 @@ test.describe('PasswordStrength', () => {
 
     test.describe('scorer option', () => {
         test('works with scorer option', async ({ page }) => {
-            await page.evaluate((_) => {
-                const password = document.querySelector('#password');
+            await page.evaluate(() => {
+                const password = $.findOne('#password');
                 UI.PasswordStrength.init(password, {
                     commonPasswords: [
                         ...UI.PasswordStrength.defaults.commonPasswords,
@@ -535,7 +537,7 @@ test.describe('PasswordStrength', () => {
                 });
             });
 
-            expect(await page.evaluate((_) =>
+            expect(await page.evaluate(() =>
                 window.passwordStrengthScorerArguments)).toEqual({
                 commonPassword: 'projectsecret',
                 value: 'A1!',
@@ -556,7 +558,7 @@ test.describe('PasswordStrength', () => {
         ]) {
             test(`normalizes a ${name} scorer result`, async ({ page }) => {
                 expect(await page.evaluate((result) => {
-                    const instance = UI.PasswordStrength.init(document.querySelector('#password'), {
+                    const instance = UI.PasswordStrength.init($.findOne('#password'), {
                         scorer: () => result,
                     });
                     return instance.getStrength();
@@ -577,9 +579,9 @@ test.describe('PasswordStrength', () => {
         ]) {
             test(`renders stripes according to the ${name}`, async ({ page }) => {
                 await page.evaluate(({ options, attributes }) => {
-                    const password = document.querySelector('#password');
+                    const password = $.findOne('#password');
                     for (const [name, value] of Object.entries(attributes)) {
-                        password.setAttribute(name, value);
+                        $.setAttribute(password, name, value);
                     }
                     UI.PasswordStrength.init(password, options);
                 }, { options, attributes });

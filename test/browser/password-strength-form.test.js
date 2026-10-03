@@ -5,8 +5,8 @@ test.describe('PasswordStrength forms', () => {
         test.beforeEach(async ({ page }) => {
             await page.clock.install({ time: 0 });
             await page.clock.pauseAt(1000);
-            await page.evaluate((_) => {
-                document.body.innerHTML = '<form id="form"><div id="field"><input id="password" type="password" value="A1!"></div></form>';
+            await page.evaluate(() => {
+                $.setHtml(document.body, '<form id="form"><div id="field"><input id="password" type="password" value="A1!"></div></form>');
                 window.passwordStrengthResetCalls = 0;
                 UI.PasswordStrength.init($.findOne('#password'), {
                     scorer: (value) => {
@@ -25,10 +25,10 @@ test.describe('PasswordStrength forms', () => {
             test(`refreshes after resetting to ${initial || 'empty'}`, async ({ page }) => {
                 await page.evaluate(({ initial, current }) => {
                     const password = $.findOne('#password');
-                    password.defaultValue = initial;
+                    $.setProperty(password, 'defaultValue', initial);
                     $.setValue(password, current);
                     $.triggerEvent(password, 'input');
-                    document.querySelector('#form').reset();
+                    $.findOne('#form').reset();
                 }, { initial, current });
                 await page.clock.runFor(1);
 
@@ -41,12 +41,12 @@ test.describe('PasswordStrength forms', () => {
         }
 
         test('handles an input associated with an external form', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 $.append(document.body, '<div id="field2"><input id="password2" form="form" value="CorrectHorseBatteryStaple"></div>');
                 UI.PasswordStrength.init($.findOne('#password2'));
                 $.setValue('#password2', 'password');
                 $.triggerEvent('#password2', 'input');
-                document.querySelector('#form').reset();
+                $.findOne('#form').reset();
             });
             await page.clock.runFor(1);
 
@@ -56,9 +56,9 @@ test.describe('PasswordStrength forms', () => {
 
         test('does not refresh when reset is canceled', async ({ page }) => {
             await page.locator('#password').fill('CorrectHorseBatteryStaple');
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 window.passwordStrengthResetCalls = 0;
-                const form = document.querySelector('#form');
+                const form = $.findOne('#form');
                 form.addEventListener('reset', (event) => event.preventDefault());
                 form.reset();
             });
@@ -66,13 +66,13 @@ test.describe('PasswordStrength forms', () => {
 
             await expect(page.locator('#password')).toHaveValue('CorrectHorseBatteryStaple');
             await expect(page.locator('.progress-bar')).toHaveAttribute('aria-valuenow', '100');
-            expect(await page.evaluate((_) => window.passwordStrengthResetCalls)).toBe(0);
+            expect(await page.evaluate(() => window.passwordStrengthResetCalls)).toBe(0);
         });
 
         test('finishes a reset when a later reset is canceled', async ({ page }) => {
             await page.locator('#password').fill('CorrectHorseBatteryStaple');
-            await page.evaluate((_) => {
-                const form = document.querySelector('#form');
+            await page.evaluate(() => {
+                const form = $.findOne('#form');
                 form.reset();
                 form.addEventListener('reset', (event) => event.preventDefault(), { once: true });
                 form.reset();
@@ -87,26 +87,26 @@ test.describe('PasswordStrength forms', () => {
         test('ignores a pending reset after disposal', async ({ page }) => {
             const errors = [];
             page.on('pageerror', (error) => errors.push(error.message));
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 window.passwordStrengthResetCalls = 0;
-                document.querySelector('#form').reset();
+                $.findOne('#form').reset();
                 $.getData('#password', 'passwordstrength').dispose();
             });
             await page.clock.runFor(1);
 
             await expect(page.locator('.progress')).toHaveCount(0);
-            expect(await page.evaluate((_) => window.passwordStrengthResetCalls)).toBe(0);
+            expect(await page.evaluate(() => window.passwordStrengthResetCalls)).toBe(0);
             expect(errors).toEqual([]);
         });
 
         test('keeps other instances subscribed when one is disposed', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 $.append('#form', '<div id="field2"><input id="password2" value="CorrectHorseBatteryStaple"></div>');
                 UI.PasswordStrength.init($.findOne('#password2'));
                 $.setValue('#password2', 'password');
                 $.triggerEvent('#password2', 'input');
                 $.getData('#password', 'passwordstrength').dispose();
-                document.querySelector('#form').reset();
+                $.findOne('#form').reset();
             });
             await page.clock.runFor(1);
 
