@@ -353,7 +353,7 @@ var PasswordStrength = class extends BaseComponent {
 			};
 			$.addEvent(this.#form, "reset.ui.passwordstrength", this.#resetHandler);
 		}
-		$.addEvent(this.node, "input.ui.passwordstrength", (_) => {
+		$.addEvent(this.node, "input.ui.passwordstrength", () => {
 			this.#refresh();
 		});
 	}
@@ -379,7 +379,7 @@ var PasswordStrength = class extends BaseComponent {
 		this.#progress = $.create("div", { class: this.constructor.classes.progress });
 		const id = generateId("password-strength");
 		this.#progressBar = $.create("div", { attributes: {
-			"id": id,
+			id,
 			"role": "progressbar",
 			"aria-valuemin": 0,
 			"aria-valuemax": 100

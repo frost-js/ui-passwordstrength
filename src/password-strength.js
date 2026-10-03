@@ -204,7 +204,7 @@ export default class PasswordStrength extends BaseComponent {
             $.addEvent(this.#form, 'reset.ui.passwordstrength', this.#resetHandler);
         }
 
-        $.addEvent(this.node, 'input.ui.passwordstrength', (_) => {
+        $.addEvent(this.node, 'input.ui.passwordstrength', () => {
             this.#refresh();
         });
     }
@@ -246,7 +246,7 @@ export default class PasswordStrength extends BaseComponent {
 
         this.#progressBar = $.create('div', {
             attributes: {
-                'id': id,
+                id,
                 'role': 'progressbar',
                 'aria-valuemin': 0,
                 'aria-valuemax': 100,

@@ -385,7 +385,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				};
 				_fr0st_query.default.addEvent(this.#form, "reset.ui.passwordstrength", this.#resetHandler);
 			}
-			_fr0st_query.default.addEvent(this.node, "input.ui.passwordstrength", (_) => {
+			_fr0st_query.default.addEvent(this.node, "input.ui.passwordstrength", () => {
 				this.#refresh();
 			});
 		}
@@ -411,7 +411,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			this.#progress = _fr0st_query.default.create("div", { class: this.constructor.classes.progress });
 			const id = (0, _fr0st_ui.generateId)("password-strength");
 			this.#progressBar = _fr0st_query.default.create("div", { attributes: {
-				"id": id,
+				id,
 				"role": "progressbar",
 				"aria-valuemin": 0,
 				"aria-valuemax": 100
