@@ -1,6 +1,6 @@
 {
     "name": "@fr0st/ui-passwordstrength",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "private": false,
     "description": "Password strength indicator component for Frost UI with customizable levels, labels, and striped progress styling.",
     "keywords": [
