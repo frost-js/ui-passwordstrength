@@ -127,7 +127,7 @@ export default class PasswordStrength extends BaseComponent {
                 }
             }
 
-            this.#form = this.node.form;
+            this.#form = $.getProperty(this.node, 'form');
 
             if (this.options.container) {
                 this.#container = $.findOne(this.options.container);

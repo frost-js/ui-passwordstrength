@@ -338,7 +338,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 					this.options[key].length = 0;
 					_fr0st_query.default._extend(this.options[key], overrides[key]);
 				}
-				this.#form = this.node.form;
+				this.#form = _fr0st_query.default.getProperty(this.node, "form");
 				if (this.options.container) this.#container = _fr0st_query.default.findOne(this.options.container);
 				else this.#container = _fr0st_query.default.closest(this.node, ":not(.form-input):not(.input-group)").shift();
 				this.#render();

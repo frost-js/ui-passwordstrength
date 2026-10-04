@@ -306,7 +306,7 @@ var PasswordStrength = class extends BaseComponent {
 				this.options[key].length = 0;
 				$._extend(this.options[key], overrides[key]);
 			}
-			this.#form = this.node.form;
+			this.#form = $.getProperty(this.node, "form");
 			if (this.options.container) this.#container = $.findOne(this.options.container);
 			else this.#container = $.closest(this.node, ":not(.form-input):not(.input-group)").shift();
 			this.#render();
