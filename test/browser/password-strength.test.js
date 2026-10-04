@@ -24,6 +24,27 @@ test.describe('PasswordStrength', () => {
             });
         }
 
+        for (const tag of ['div', 'select', 'textarea']) {
+            for (const { name, init } of [
+                { name: 'class', init: () => UI.PasswordStrength.init($.findOne('#invalid')) },
+                { name: 'QuerySet', init: () => $('#invalid').passwordstrength() },
+            ]) {
+                test(`rejects ${tag} elements without side effects (${name})`, async ({ page }) => {
+                    const markup = await page.evaluate((tag) => {
+                        $.setHtml(document.body, `<${tag} id="invalid" class="existing" tabindex="7"></${tag}>`);
+                        return $.getHtml(document.body);
+                    }, tag);
+
+                    await expect(page.evaluate(init)).rejects.toThrow(
+                        'PasswordStrength must be created on an input element.',
+                    );
+
+                    expect(await page.evaluate(() => $.hasData('#invalid', 'passwordstrength'))).toBe(false);
+                    expect(await page.evaluate(() => $.getHtml(document.body))).toBe(markup);
+                });
+            }
+        }
+
         test('creates multiple PasswordStrengths (QuerySet)', async ({ page }) => {
             expect(await page.evaluate(() => {
                 $('input').passwordstrength();
