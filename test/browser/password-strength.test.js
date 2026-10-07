@@ -267,17 +267,6 @@ test.describe('PasswordStrength', () => {
     });
 
     test.describe('#dispose', () => {
-        test('ignores repeated disposal after reinitialization', async ({ page }) => {
-            expect(await page.evaluate(() => {
-                const node = $.findOne('#password');
-                const first = UI.PasswordStrength.init(node);
-                first.dispose();
-                first.dispose();
-                const second = UI.PasswordStrength.init(node);
-                first.dispose();
-                return $.getData(node, 'passwordstrength') === second;
-            })).toBe(true);
-        });
         for (const { name, dispose } of [
             { name: 'class', dispose: (instance) => instance.dispose() },
             { name: 'QuerySet', dispose: () => $('#password').passwordstrength('dispose') },
@@ -333,6 +322,18 @@ test.describe('PasswordStrength', () => {
                 $.triggerEvent(password, 'input');
                 return calls;
             })).toBe(0);
+        });
+
+        test('ignores repeated disposal after reinitialization', async ({ page }) => {
+            expect(await page.evaluate(() => {
+                const node = $.findOne('#password');
+                const first = UI.PasswordStrength.init(node);
+                first.dispose();
+                first.dispose();
+                const second = UI.PasswordStrength.init(node);
+                first.dispose();
+                return $.getData(node, 'passwordstrength') === second;
+            })).toBe(true);
         });
     });
 
