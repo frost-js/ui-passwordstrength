@@ -274,12 +274,12 @@ var PasswordStrength = class extends BaseComponent {
 		scorer: getStrength,
 		striped: false
 	};
-	#container;
+	#container = null;
 	#describedBy;
-	#form;
-	#progress;
-	#progressBar;
-	#resetHandler;
+	#form = null;
+	#progress = null;
+	#progressBar = null;
+	#resetHandler = null;
 	/**
 	* Calculates the strength of a password.
 	* @param {string} password The password.

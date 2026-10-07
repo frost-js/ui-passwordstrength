@@ -306,12 +306,12 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			scorer: getStrength,
 			striped: false
 		};
-		#container;
+		#container = null;
 		#describedBy;
-		#form;
-		#progress;
-		#progressBar;
-		#resetHandler;
+		#form = null;
+		#progress = null;
+		#progressBar = null;
+		#resetHandler = null;
 		/**
 		* Calculates the strength of a password.
 		* @param {string} password The password.

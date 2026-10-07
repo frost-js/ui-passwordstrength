@@ -89,12 +89,12 @@ export default class PasswordStrength extends BaseComponent {
         striped: false,
     };
 
-    #container;
+    #container = null;
     #describedBy;
-    #form;
-    #progress;
-    #progressBar;
-    #resetHandler;
+    #form = null;
+    #progress = null;
+    #progressBar = null;
+    #resetHandler = null;
 
     /**
      * Calculates the strength of a password.
