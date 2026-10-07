@@ -311,7 +311,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		#form = null;
 		#progress = null;
 		#progressBar = null;
-		#resetHandler = null;
 		/**
 		* Calculates the strength of a password.
 		* @param {string} password The password.
@@ -347,15 +346,12 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		dispose() {
 			if (!this.node) return;
 			_fr0st_query.default.remove(this.#progress);
-			_fr0st_query.default.removeEvent(this.node, "input.ui.passwordstrength");
-			if (this.#form && this.#resetHandler) _fr0st_query.default.removeEvent(this.#form, "reset.ui.passwordstrength", this.#resetHandler);
 			if (this.#describedBy === null) _fr0st_query.default.removeAttribute(this.node, "aria-describedby");
 			else _fr0st_query.default.setAttribute(this.node, { "aria-describedby": this.#describedBy });
 			this.#container = null;
 			this.#form = null;
 			this.#progress = null;
 			this.#progressBar = null;
-			this.#resetHandler = null;
 			super.dispose();
 		}
 		/**
@@ -371,15 +367,12 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* Attaches events for the PasswordStrength.
 		*/
 		#events() {
-			if (this.#form) {
-				this.#resetHandler = (event) => {
-					setTimeout(() => {
-						if (this.node && !event.defaultPrevented) this.#refresh();
-					}, 0);
-				};
-				_fr0st_query.default.addEvent(this.#form, "reset.ui.passwordstrength", this.#resetHandler);
-			}
-			_fr0st_query.default.addEvent(this.node, "input.ui.passwordstrength", () => {
+			if (this.#form) this.listen(this.#form, "reset.ui.passwordstrength", (event) => {
+				setTimeout(() => {
+					if (this.node && !event.defaultPrevented) this.#refresh();
+				}, 0);
+			});
+			this.listen(this.node, "input.ui.passwordstrength", () => {
 				this.#refresh();
 			});
 		}

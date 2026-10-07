@@ -94,7 +94,6 @@ export default class PasswordStrength extends BaseComponent {
     #form = null;
     #progress = null;
     #progressBar = null;
-    #resetHandler = null;
 
     /**
      * Calculates the strength of a password.
@@ -146,11 +145,6 @@ export default class PasswordStrength extends BaseComponent {
         }
 
         $.remove(this.#progress);
-        $.removeEvent(this.node, 'input.ui.passwordstrength');
-
-        if (this.#form && this.#resetHandler) {
-            $.removeEvent(this.#form, 'reset.ui.passwordstrength', this.#resetHandler);
-        }
 
         if (this.#describedBy === null) {
             $.removeAttribute(this.node, 'aria-describedby');
@@ -162,7 +156,6 @@ export default class PasswordStrength extends BaseComponent {
         this.#form = null;
         this.#progress = null;
         this.#progressBar = null;
-        this.#resetHandler = null;
 
         super.dispose();
     }
@@ -188,18 +181,16 @@ export default class PasswordStrength extends BaseComponent {
      */
     #events() {
         if (this.#form) {
-            this.#resetHandler = (event) => {
+            this.listen(this.#form, 'reset.ui.passwordstrength', (event) => {
                 setTimeout(() => {
                     if (this.node && !event.defaultPrevented) {
                         this.#refresh();
                     }
                 }, 0);
-            };
-
-            $.addEvent(this.#form, 'reset.ui.passwordstrength', this.#resetHandler);
+            });
         }
 
-        $.addEvent(this.node, 'input.ui.passwordstrength', () => {
+        this.listen(this.node, 'input.ui.passwordstrength', () => {
             this.#refresh();
         });
     }
