@@ -296,7 +296,7 @@ var PasswordStrength = class extends BaseComponent {
 	* @throws {TypeError} When the node is not an input element.
 	*/
 	constructor(node, options) {
-		if (!$.is(node, "input")) throw new TypeError("PasswordStrength must be created on an input element.");
+		if (!$._isElement(node) || !$.is(node, "input")) throw new TypeError("PasswordStrength must be created on an input element.");
 		super(node, options);
 		try {
 			this.#describedBy = $.getAttribute(this.node, "aria-describedby");

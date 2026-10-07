@@ -24,6 +24,52 @@ test.describe('PasswordStrength', () => {
             });
         }
 
+        test('rejects non-element arguments without disturbing an existing instance', async ({ page }) => {
+            const state = await page.evaluate(() => {
+                const node = $.findOne('#password');
+                const instance = UI.PasswordStrength.init(node);
+                const html = $.getHtml(document.body);
+                const errors = [];
+
+                for (const [name, argument] of [
+                    ['null', null],
+                    ['undefined', undefined],
+                    ['selector', '#password'],
+                    ['malformed selector', '['],
+                    ['array', [node]],
+                    ['QuerySet', $('#password')],
+                    ['document', document],
+                    ['text node', document.createTextNode('text')],
+                ]) {
+                    for (const [method, init] of [
+                        ['constructor', (node) => new UI.PasswordStrength(node)],
+                        ['init', (node) => UI.PasswordStrength.init(node)],
+                    ]) {
+                        let message = null;
+
+                        try {
+                            init(argument);
+                        } catch (error) {
+                            message = `${error.name}: ${error.message}`;
+                        }
+
+                        errors.push({ name, method, message });
+                    }
+                }
+
+                return {
+                    errors,
+                    unchanged: $.getHtml(document.body) === html &&
+                        $.getData(node, UI.PasswordStrength.DATA_KEY) === instance,
+                };
+            });
+
+            for (const { name, method, message } of state.errors) {
+                expect(message, `${name} (${method})`).toBe('TypeError: PasswordStrength must be created on an input element.');
+            }
+            expect(state.unchanged).toBe(true);
+        });
+
         for (const tag of ['div', 'select', 'textarea']) {
             for (const { name, init } of [
                 { name: 'class', init: () => UI.PasswordStrength.init($.findOne('#invalid')) },
