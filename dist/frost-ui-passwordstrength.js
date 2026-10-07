@@ -332,14 +332,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			super(node, options);
 			try {
 				this.#describedBy = _fr0st_query.default.getAttribute(this.node, "aria-describedby");
-				const overrides = {
-					...(0, _fr0st_ui.getDataset)(node),
-					...options
-				};
-				for (const key of ["levels", "commonPasswords"]) if (Array.isArray(overrides[key])) {
-					this.options[key].length = 0;
-					_fr0st_query.default._extend(this.options[key], overrides[key]);
-				}
 				this.#form = _fr0st_query.default.getProperty(this.node, "form");
 				if (this.options.container) this.#container = _fr0st_query.default.findOne(this.options.container);
 				else this.#container = _fr0st_query.default.closest(this.node, ":not(.form-input):not(.input-group)").shift();
