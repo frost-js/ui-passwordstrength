@@ -124,8 +124,6 @@ Calling `PasswordStrength.init()` again for the same input returns its existing 
 
 The indicator renders the initial value and refreshes on `input` events. After changing the input's value in JavaScript, dispatch an `input` event to refresh the indicator; `getStrength()` only returns the current score.
 
-Form resets refresh the indicator after the browser restores the input's default value. This refresh is deferred until after the reset event finishes and is skipped if the reset is canceled. Inputs associated with a form through the `form` attribute are also supported.
-
 ## Options
 
 Options are resolved in this order:
@@ -309,9 +307,14 @@ Pass an options object to initialize every matched element, or pass a public met
 - A unique generated progress ID is appended to the input's existing `aria-describedby` value instead of replacing it.
 - Disposal restores the original `aria-describedby` state exactly, including absent and empty values.
 - Disposal also removes the generated progress markup, namespaced input and form-reset listeners, and registered component data.
-- The original password input remains the interactive and submitted form control.
 
 Applications remain responsible for meaningful labels, password requirements, validation feedback, and error messages. Treat the displayed score as guidance rather than proof that a password is safe.
+
+## Forms
+
+The original password input remains the interactive and submitted form control.
+
+Form resets refresh the indicator after the browser restores the input's default value. This refresh is deferred until after the reset event finishes and is skipped if the reset is canceled. Inputs associated with a form through the `form` attribute are also supported.
 
 ## Themes and RTL
 

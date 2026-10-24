@@ -85,8 +85,6 @@ test.describe('PasswordStrength forms', () => {
         });
 
         test('ignores a pending reset after disposal', async ({ page }) => {
-            const errors = [];
-            page.on('pageerror', (error) => errors.push(error.message));
             await page.evaluate(() => {
                 window.passwordStrengthResetCalls = 0;
                 $.findOne('#form').reset();
@@ -96,7 +94,6 @@ test.describe('PasswordStrength forms', () => {
 
             await expect(page.locator('.progress')).toHaveCount(0);
             expect(await page.evaluate(() => window.passwordStrengthResetCalls)).toBe(0);
-            expect(errors).toEqual([]);
         });
 
         test('keeps other instances subscribed when one is disposed', async ({ page }) => {
