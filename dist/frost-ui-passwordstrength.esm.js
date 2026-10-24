@@ -191,6 +191,7 @@ var getStrength = (password, commonPasswords = []) => {
 
 //#endregion
 //#region src/password-strength.js
+var window = $.getWindow();
 /**
 * @typedef {object} PasswordStrengthLevel
 * @property {string} class The CSS class applied to the progress bar.
@@ -336,7 +337,7 @@ var PasswordStrength = class extends BaseComponent {
 	*/
 	#events() {
 		if (this.#form) this.listen(this.#form, "reset.ui.passwordstrength", (event) => {
-			setTimeout(() => {
+			window.setTimeout(() => {
 				if (this.node && !event.defaultPrevented) this.#refresh();
 			}, 0);
 		});

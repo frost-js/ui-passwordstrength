@@ -223,7 +223,8 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 
 //#endregion
 //#region src/password-strength.js
-/**
+	var window = _fr0st_query.default.getWindow();
+	/**
 	* @typedef {object} PasswordStrengthLevel
 	* @property {string} class The CSS class applied to the progress bar.
 	* @property {number} score The minimum score for the level.
@@ -368,7 +369,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		*/
 		#events() {
 			if (this.#form) this.listen(this.#form, "reset.ui.passwordstrength", (event) => {
-				setTimeout(() => {
+				window.setTimeout(() => {
 					if (this.node && !event.defaultPrevented) this.#refresh();
 				}, 0);
 			});
