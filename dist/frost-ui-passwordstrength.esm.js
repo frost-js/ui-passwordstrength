@@ -1,7 +1,7 @@
 import { BaseComponent, generateId, initComponent } from "@fr0st/ui";
 import $ from "@fr0st/query";
 
-//#region src/strength.js
+// src/strength.js
 var characterTypes = [
 	{
 		pattern: /\p{Ll}/u,
@@ -189,8 +189,7 @@ var getStrength = (password, commonPasswords = []) => {
 	return $._clamp(score - predictableCount, 0, predictableCount === characters.length ? 15 : 100);
 };
 
-//#endregion
-//#region src/password-strength.js
+// src/password-strength.js
 var window = $.getWindow();
 /**
 * @typedef {object} PasswordStrengthLevel
@@ -379,11 +378,9 @@ var PasswordStrength = class extends BaseComponent {
 	}
 };
 
-//#endregion
-//#region src/index.js
+// src/index.js
 initComponent("passwordstrength", PasswordStrength);
 var src_default = PasswordStrength;
 
-//#endregion
 export { src_default as default };
 //# sourceMappingURL=frost-ui-passwordstrength.esm.js.map

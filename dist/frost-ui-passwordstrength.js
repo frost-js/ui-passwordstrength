@@ -1,10 +1,10 @@
 (function(global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ?  factory(exports, require('@fr0st/ui'), require('@fr0st/query')) :
-  typeof define === 'function' && define.amd ? define(['exports', '@fr0st/ui', '@fr0st/query'], factory) :
+  typeof exports === 'object' && typeof module !== 'undefined' ?  factory(exports, require("@fr0st/ui"), require("@fr0st/query")) :
+  typeof define === 'function' && define.amd ? define(['exports', "@fr0st/ui", "@fr0st/query"], factory) :
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory((global.UI = global.UI || {}), global.UI,global.fQuery));
 })(this, function(exports, _fr0st_ui, _fr0st_query) {
 Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-//#region \0rolldown/runtime.js
+// \0rolldown/runtime.js
 	var __create = Object.create;
 	var __defProp = Object.defineProperty;
 	var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -30,10 +30,9 @@ Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 		enumerable: true
 	}) : target, mod));
 
-//#endregion
 _fr0st_query = __toESM(_fr0st_query, 1);
 
-//#region src/strength.js
+// src/strength.js
 	var characterTypes = [
 		{
 			pattern: /\p{Ll}/u,
@@ -221,8 +220,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		return _fr0st_query.default._clamp(score - predictableCount, 0, predictableCount === characters.length ? 15 : 100);
 	};
 
-//#endregion
-//#region src/password-strength.js
+// src/password-strength.js
 	var window = _fr0st_query.default.getWindow();
 	/**
 	* @typedef {object} PasswordStrengthLevel
@@ -411,12 +409,10 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		}
 	};
 
-//#endregion
-//#region src/index.js
+// src/index.js
 	(0, _fr0st_ui.initComponent)("passwordstrength", PasswordStrength);
 	var src_default = PasswordStrength;
 
-//#endregion
 exports.PasswordStrength = src_default;
 });
 //# sourceMappingURL=frost-ui-passwordstrength.js.map
